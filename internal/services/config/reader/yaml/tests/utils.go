@@ -14,6 +14,7 @@ func Dump(value any) string {
 	utter.Fdump(&golden, value)
 
 	result := golden.String()
+	result = strings.ReplaceAll(result, "github.com/fe3dback/go-arch-lint-sdk/", "")
 	result = strings.ReplaceAll(result, "github.com/fe3dback/go-arch-lint/v4/", "")
 	result = strings.ReplaceAll(result, "github.com/fe3dback/go-arch-lint/", "")
 

@@ -3,12 +3,13 @@ package yaml_test
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/fe3dback/go-arch-lint/v4/internal/services/config/reader/yaml"
-	testUtils "github.com/fe3dback/go-arch-lint/v4/internal/services/config/reader/yaml/tests"
+	"github.com/fe3dback/go-arch-lint-sdk/internal/services/config/reader/yaml"
+	testUtils "github.com/fe3dback/go-arch-lint-sdk/internal/services/config/reader/yaml/tests"
 )
 
 //go:generate go run ./tests/gen/gen_stub.go
@@ -51,10 +52,21 @@ func TestReader_Parse(t *testing.T) {
 			}
 
 			got := testUtils.Dump(conf)
-			want, err := os.ReadFile(fmt.Sprintf("./tests/data/%s_parsed.gold", tt.testConfig))
+			wantWithHeader, err := os.ReadFile(fmt.Sprintf("./tests/data/%s_parsed.gold", tt.testConfig))
 			require.NoError(t, err)
 
-			require.Equal(t, string(want), got)
+			want := trimGoldHeader(string(wantWithHeader))
+
+			require.Equal(t, want, got)
 		})
 	}
+}
+
+func trimGoldHeader(content string) string {
+	lines := strings.Split(content, "\n")
+	if len(lines) < 4 {
+		return "unexpected file OR check 'trimGoldHeader' function"
+	}
+
+	return strings.Join(lines[3:], "\n")
 }

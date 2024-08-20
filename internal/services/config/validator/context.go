@@ -21,14 +21,14 @@ func (vc *validationContext) SkipOtherValidators() {
 
 func (vc *validationContext) AddNotice(message string, ref arch.Reference) {
 	vc.notices = append(vc.notices, arch.Notice{
-		Message:   fmt.Sprintf("%s: %s", vc.currentValidator, message),
+		Message:   vc.format(message),
 		Reference: ref,
 	})
 }
 
 func (vc *validationContext) AddMissUse(message string, ref arch.Reference) {
 	vc.missUsage = append(vc.missUsage, arch.Notice{
-		Message:   fmt.Sprintf("%s: %s", vc.currentValidator, message),
+		Message:   vc.format(message),
 		Reference: ref,
 	})
 }
@@ -39,4 +39,12 @@ func (vc *validationContext) IsKnownComponent(name arch.ComponentName) bool {
 
 func (vc *validationContext) IsKnownVendor(name arch.VendorName) bool {
 	return vc.conf.Vendors.Map.Has(name)
+}
+
+func (vc *validationContext) format(message string) string {
+	if vc.currentValidator == "" {
+		return message
+	}
+
+	return fmt.Sprintf("%s: %s", vc.currentValidator, message)
 }
