@@ -22,6 +22,7 @@ func (c *Container) serviceConfigReaderYAML() *yaml.Reader {
 func (c *Container) serviceConfigValidator() *validator.Root {
 	return once(func() *validator.Root {
 		return validator.NewRoot(
+			c.usedContext,
 			c.skipMissUsages,
 			c.serviceConfigValidatorWorkdir(),
 			c.serviceConfigValidatorExcludedFiles(),

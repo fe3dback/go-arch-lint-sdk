@@ -1,0 +1,32 @@
+version: 4
+workingDirectory: internal
+
+settings:
+  imports:
+    strictMode: false
+    allowAnyVendorImports: false
+  structTags:
+    allowed: [json]
+
+components:
+  app:                { in: . }
+  handlers:           { in: handlers/* }
+  services:           { in: domains/*/services/** }
+  repositories:       { in: repositories/** }
+  models:             { in: models }
+
+commonComponents:
+  - models
+
+dependencies:
+  handlers:
+    mayDependOn:
+      - services
+
+  services:
+    mayDependOn:
+      - repositories
+
+  repositories:
+    canContainTags:
+      - db

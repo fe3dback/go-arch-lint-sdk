@@ -56,8 +56,12 @@ func (c *DepsValidator) Validate(ctx *validationContext) {
 				return
 			}
 
+			if len(rules.CanContainTags.Values()) > 0 {
+				return
+			}
+
 			ctx.AddNotice(
-				fmt.Sprintf("In component '%s': no rules is defined (require at least one of [AnyProjectDeps, AnyVendorDeps, MayDependOn, CanUse])", name),
+				fmt.Sprintf("In component '%s': no rules is defined (require at least one of [AnyProjectDeps, AnyVendorDeps, MayDependOn, CanUse, CanContainTags])", name),
 				reference,
 			)
 			return

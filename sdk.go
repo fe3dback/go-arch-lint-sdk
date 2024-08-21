@@ -24,6 +24,7 @@ type (
 // you need pass absolute projectDirectory where your GO project (go.mod) is located
 func NewSDK(projectDirectory arch.PathAbsolute, opts ...CreateOptionsFn) *SDK {
 	opt := &CreateOptions{
+		usedContext: arch.UsedContextDefault,
 		skipMissUse: false,
 	}
 
@@ -34,6 +35,7 @@ func NewSDK(projectDirectory arch.PathAbsolute, opts ...CreateOptionsFn) *SDK {
 	return &SDK{
 		di: container.NewContainer(
 			projectDirectory,
+			opt.usedContext,
 			opt.skipMissUse,
 		),
 	}

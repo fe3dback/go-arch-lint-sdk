@@ -1,0 +1,58 @@
+{
+  "ProjectDirectory": "/root",
+  "ModuleName": "github.com/fe3dback/go-arch-lint-sdk/tests/projects/mvc",
+  "MappingGrouped": [
+    {
+      "ComponentName": "app",
+      "Packages": [
+        "/root/internal"
+      ]
+    },
+    {
+      "ComponentName": "handlers",
+      "Packages": [
+        "/root/internal/handlers/books"
+      ]
+    },
+    {
+      "ComponentName": "models",
+      "Packages": [
+        "/root/internal/models"
+      ]
+    },
+    {
+      "ComponentName": "repositories",
+      "Packages": [
+        "/root/internal/repositories/books"
+      ]
+    },
+    {
+      "ComponentName": "services",
+      "Packages": [
+        "/root/internal/domains/library/services/books/create"
+      ]
+    }
+  ],
+  "MappingList": [
+    {
+      "Package": "/root/internal",
+      "ComponentName": "app"
+    },
+    {
+      "Package": "/root/internal/handlers/books",
+      "ComponentName": "handlers"
+    },
+    {
+      "Package": "/root/internal/models",
+      "ComponentName": "models"
+    },
+    {
+      "Package": "/root/internal/repositories/books",
+      "ComponentName": "repositories"
+    },
+    {
+      "Package": "/root/internal/domains/library/services/books/create",
+      "ComponentName": "services"
+    }
+  ]
+}

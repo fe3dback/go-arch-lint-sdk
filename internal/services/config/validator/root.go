@@ -8,12 +8,14 @@ import (
 )
 
 type Root struct {
+	usedContext arch.UsedContext
 	skipMissuse bool
 	validators  []internalValidator
 }
 
-func NewRoot(skipMissuse bool, validators ...internalValidator) *Root {
+func NewRoot(usedContext arch.UsedContext, skipMissuse bool, validators ...internalValidator) *Root {
 	return &Root{
+		usedContext: usedContext,
 		skipMissuse: skipMissuse,
 		validators:  validators,
 	}
@@ -39,6 +41,7 @@ func (v *Root) Validate(config models.Config) error {
 		return arch.NewErrorWithNotices(
 			"Config validator find some notices",
 			ctx.notices,
+			v.usedContext != arch.UsedContextCLI,
 		)
 	}
 
@@ -46,6 +49,7 @@ func (v *Root) Validate(config models.Config) error {
 		return arch.NewErrorWithNotices(
 			"Config validator find miss usages. You can hide this message by adding '--skip-missuse' flag",
 			ctx.missUsage,
+			v.usedContext != arch.UsedContextCLI,
 		)
 	}
 

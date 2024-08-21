@@ -1,7 +1,10 @@
 package sdk
 
+import "github.com/fe3dback/go-arch-lint-sdk/arch"
+
 type (
 	CreateOptions struct {
+		usedContext arch.UsedContext
 		skipMissUse bool
 	}
 
@@ -13,5 +16,13 @@ type (
 func WithSkipMissUse(skipMissUse bool) CreateOptionsFn {
 	return func(opt *CreateOptions) {
 		opt.skipMissUse = skipMissUse
+	}
+}
+
+// WithUsedContext sets the logic context in which the SDK runs
+// In 99.9% you don`t need set this option
+func WithUsedContext(usedContext arch.UsedContext) CreateOptionsFn {
+	return func(opt *CreateOptions) {
+		opt.usedContext = usedContext
 	}
 }
