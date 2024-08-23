@@ -102,6 +102,15 @@ func NewReference(file PathAbsolute, line int, column int, xpath string) Referen
 	}
 }
 
+func NewFileReference(file PathAbsolute) Reference {
+	return Reference{
+		File:   file,
+		Line:   1,
+		Column: 0,
+		Valid:  true,
+	}
+}
+
 func NewInvalidReference() Reference {
 	return Reference{
 		Valid: false,

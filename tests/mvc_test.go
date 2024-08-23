@@ -12,7 +12,7 @@ import (
 
 	sdk "github.com/fe3dback/go-arch-lint-sdk"
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
-	"github.com/fe3dback/go-arch-lint-sdk/mapping"
+	"github.com/fe3dback/go-arch-lint-sdk/commands/mapping"
 )
 
 // If you set this to TRUE:

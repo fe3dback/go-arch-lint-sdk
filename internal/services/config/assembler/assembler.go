@@ -37,6 +37,7 @@ func (a *Assembler) Assemble(conf models.Config) (spec arch.Spec, err error) {
 	}
 
 	components := make([]*arch.SpecComponent, 0, conf.Dependencies.Map.Len())
+	mappedFiles := make(map[arch.PathRelative]any, 128)
 
 	conf.Components.Map.Each(func(name arch.ComponentName, definition models.ConfigComponent, definitionRef arch.Reference) {
 
@@ -56,7 +57,7 @@ func (a *Assembler) Assemble(conf models.Config) (spec arch.Spec, err error) {
 
 		tagsAllowedAll, tagsAllowedWhiteList := a.figureOutAllowedStructTags(&conf, &rules)
 
-		matchedFiles, err := a.findOwnedFiles(conf.WorkingDirectory.Value, definition)
+		matchedFiles, err := a.findOwnedFiles(&conf, definition)
 		if err != nil {
 			panic(fmt.Errorf("failed finding owned files by component '%s': %w", name, err))
 		}
@@ -76,6 +77,10 @@ func (a *Assembler) Assemble(conf models.Config) (spec arch.Spec, err error) {
 			MatchPatterns:       definition.In,
 			MatchedFiles:        matchedFiles,
 		})
+
+		for _, dst := range matchedFiles {
+			mappedFiles[dst.PathRel] = struct{}{}
+		}
 	})
 
 	// copy matched files to owned files (but each file owned only by one component)
@@ -85,6 +90,30 @@ func (a *Assembler) Assemble(conf models.Config) (spec arch.Spec, err error) {
 	for _, component := range components {
 		component.MatchedPackages = a.extractUniquePackages(component.MatchedFiles)
 		component.OwnedPackages = a.extractUniquePackages(component.OwnedFiles)
+	}
+
+	// find orphan files
+	files, err := a.pathHelper.FindProjectFiles(arch.FileQuery{
+		Path:               arch.PathRelativeGlob("*/**"),
+		WorkingDirectory:   conf.WorkingDirectory.Value,
+		Type:               arch.FileMatchQueryTypeOnlyFiles,
+		ExcludeDirectories: conf.Exclude.RelativeDirectories.Values(),
+		ExcludeRegexp:      conf.Exclude.RelativeFiles.Values(),
+		Extensions:         []string{"go"},
+	})
+	if err != nil {
+		return arch.Spec{}, fmt.Errorf("failed finding project files: %w", err)
+	}
+
+	orphanFiles := make([]arch.SpecOrphan, 0, 32)
+	for _, projectFile := range files {
+		if _, mapped := mappedFiles[projectFile.PathRel]; mapped {
+			continue
+		}
+
+		orphanFiles = append(orphanFiles, arch.SpecOrphan{
+			File: projectFile,
+		})
 	}
 
 	// sort paths
@@ -105,6 +134,7 @@ func (a *Assembler) Assemble(conf models.Config) (spec arch.Spec, err error) {
 		Project:          projectInfo,
 		WorkingDirectory: conf.WorkingDirectory,
 		Components:       resultComponents,
+		Orphans:          orphanFiles,
 	}, nil
 }
 
@@ -123,7 +153,7 @@ func (a *Assembler) figureOutAllowedStructTags(conf *models.Config, rules *model
 	return arch.NewRef(false, conf.Settings.Tags.Allowed.Ref), allowedList
 }
 
-func (a *Assembler) findOwnedFiles(workingDirectory arch.PathRelative, component models.ConfigComponent) ([]arch.FileDescriptor, error) {
+func (a *Assembler) findOwnedFiles(conf *models.Config, component models.ConfigComponent) ([]arch.FileDescriptor, error) {
 	list := make([]arch.FileDescriptor, 0, 32)
 
 	for _, globPath := range component.In {
@@ -142,11 +172,10 @@ func (a *Assembler) findOwnedFiles(workingDirectory arch.PathRelative, component
 
 		files, err := a.pathHelper.FindProjectFiles(arch.FileQuery{
 			Path:               fileGlob,
-			WorkingDirectory:   workingDirectory,
+			WorkingDirectory:   conf.WorkingDirectory.Value,
 			Type:               arch.FileMatchQueryTypeOnlyFiles,
-			ExcludeDirectories: nil, // todo
-			ExcludeFiles:       nil, // todo
-			ExcludeRegexp:      nil, // todo
+			ExcludeDirectories: conf.Exclude.RelativeDirectories.Values(),
+			ExcludeRegexp:      conf.Exclude.RelativeFiles.Values(),
 			Extensions:         []string{"go"},
 		})
 

@@ -13,8 +13,8 @@ type (
 	}
 
 	Notice struct {
-		Message   string
-		Reference Reference
+		Message   string    `json:"Message"`
+		Reference Reference `json:"Reference"`
 	}
 )
 

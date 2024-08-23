@@ -4,7 +4,7 @@ import (
 	"sort"
 
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
-	"github.com/fe3dback/go-arch-lint-sdk/mapping"
+	"github.com/fe3dback/go-arch-lint-sdk/commands/mapping"
 )
 
 type Operation struct{}

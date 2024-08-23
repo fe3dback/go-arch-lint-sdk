@@ -169,7 +169,7 @@ func (h *Helper) isSuitable(dst arch.FileDescriptor, query *arch.FileQuery) (boo
 			return false, fmt.Errorf("failed compile regular expression '%s': %w", pattern, err)
 		}
 
-		if reg.MatchString(string(dst.PathRel)) {
+		if reg.MatchString("/" + string(dst.PathRel)) {
 			return false, nil
 		}
 	}
