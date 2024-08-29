@@ -16,7 +16,7 @@ func NewMatcherRelativeGlob() *MatcherRelativeGlob {
 	return &MatcherRelativeGlob{}
 }
 
-func (m *MatcherRelativeGlob) match(ctx *queryContext, query arch.FileQuery) ([]arch.FileDescriptor, error) {
+func (m *MatcherRelativeGlob) match(ctx *queryContext, query arch.FileQuery) ([]arch.PathDescriptor, error) {
 	path := query.Path.(arch.PathRelativeGlob) // guaranteed by root composite
 	path = arch.PathRelativeGlob(pathUtils.Join(string(query.WorkingDirectory), string(path)))
 
@@ -34,9 +34,9 @@ func (m *MatcherRelativeGlob) match(ctx *queryContext, query arch.FileQuery) ([]
 		}
 	}
 
-	results := make([]arch.FileDescriptor, 0, 16)
+	results := make([]arch.PathDescriptor, 0, 16)
 
-	ctx.index.each(func(dsc arch.FileDescriptor) {
+	ctx.index.each(func(dsc arch.PathDescriptor) {
 		if query.Type == arch.FileMatchQueryTypeOnlyDirectories && !dsc.IsDir {
 			return
 		}

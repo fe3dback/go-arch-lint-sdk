@@ -7,22 +7,22 @@ import (
 )
 
 type index struct {
-	full           []arch.FileDescriptor
-	files          map[arch.PathRelative]*arch.FileDescriptor
-	directories    map[arch.PathRelative]*arch.FileDescriptor
-	directoryFiles map[arch.PathRelative][]*arch.FileDescriptor
+	full           []arch.PathDescriptor
+	files          map[arch.PathRelative]*arch.PathDescriptor
+	directories    map[arch.PathRelative]*arch.PathDescriptor
+	directoryFiles map[arch.PathRelative][]*arch.PathDescriptor
 }
 
 func newIndex() *index {
 	return &index{
-		full:           make([]arch.FileDescriptor, 0, 256),
-		files:          make(map[arch.PathRelative]*arch.FileDescriptor, 256),
-		directories:    make(map[arch.PathRelative]*arch.FileDescriptor, 64),
-		directoryFiles: make(map[arch.PathRelative][]*arch.FileDescriptor, 64),
+		full:           make([]arch.PathDescriptor, 0, 256),
+		files:          make(map[arch.PathRelative]*arch.PathDescriptor, 256),
+		directories:    make(map[arch.PathRelative]*arch.PathDescriptor, 64),
+		directoryFiles: make(map[arch.PathRelative][]*arch.PathDescriptor, 64),
 	}
 }
 
-func (ind *index) appendToIndex(path arch.PathRelative, src arch.FileDescriptor) {
+func (ind *index) appendToIndex(path arch.PathRelative, src arch.PathDescriptor) {
 	parent := arch.PathRelative(filepath.Dir(string(path)))
 
 	ind.full = append(ind.full, src)
@@ -38,11 +38,11 @@ func (ind *index) appendToIndex(path arch.PathRelative, src arch.FileDescriptor)
 	case true:
 		ind.directories[path] = descriptor
 		if _, exists := ind.directoryFiles[path]; !exists {
-			ind.directoryFiles[path] = make([]*arch.FileDescriptor, 0, 8)
+			ind.directoryFiles[path] = make([]*arch.PathDescriptor, 0, 8)
 		}
 	case false:
 		if _, exists := ind.directoryFiles[parent]; !exists {
-			ind.directoryFiles[parent] = make([]*arch.FileDescriptor, 0, 8)
+			ind.directoryFiles[parent] = make([]*arch.PathDescriptor, 0, 8)
 		}
 	}
 
@@ -52,33 +52,33 @@ func (ind *index) appendToIndex(path arch.PathRelative, src arch.FileDescriptor)
 	}
 }
 
-func (ind *index) fileAt(path arch.PathRelative) (arch.FileDescriptor, bool) {
+func (ind *index) fileAt(path arch.PathRelative) (arch.PathDescriptor, bool) {
 	dst, ok := ind.files[path]
 	if !ok {
-		return arch.FileDescriptor{}, false
+		return arch.PathDescriptor{}, false
 	}
 
 	if dst.IsDir {
-		return arch.FileDescriptor{}, false
+		return arch.PathDescriptor{}, false
 	}
 
 	return *dst, true
 }
 
-func (ind *index) directoryAt(path arch.PathRelative) (arch.FileDescriptor, bool) {
+func (ind *index) directoryAt(path arch.PathRelative) (arch.PathDescriptor, bool) {
 	dst, ok := ind.directories[path]
 	if !ok {
-		return arch.FileDescriptor{}, false
+		return arch.PathDescriptor{}, false
 	}
 
 	if !dst.IsDir {
-		return arch.FileDescriptor{}, false
+		return arch.PathDescriptor{}, false
 	}
 
 	return *dst, true
 }
 
-func (ind *index) each(fn func(arch.FileDescriptor)) {
+func (ind *index) each(fn func(arch.PathDescriptor)) {
 	for _, descriptor := range ind.full {
 		fn(descriptor)
 	}

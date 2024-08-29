@@ -13,11 +13,11 @@ func NewMatcherRelative() *MatcherRelative {
 	return &MatcherRelative{}
 }
 
-func (m *MatcherRelative) match(ctx *queryContext, query arch.FileQuery) ([]arch.FileDescriptor, error) {
+func (m *MatcherRelative) match(ctx *queryContext, query arch.FileQuery) ([]arch.PathDescriptor, error) {
 	path := query.Path.(arch.PathRelative) // guaranteed by root composite
 	path = arch.PathRelative(pathUtils.Join(string(query.WorkingDirectory), string(path)))
 
-	descriptors := make([]arch.FileDescriptor, 0, 2)
+	descriptors := make([]arch.PathDescriptor, 0, 2)
 
 	if query.Type == arch.FileMatchQueryTypeAll || query.Type == arch.FileMatchQueryTypeOnlyDirectories {
 		if dir, found := ctx.index.directoryAt(path); found {

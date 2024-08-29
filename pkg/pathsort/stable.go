@@ -6,10 +6,11 @@ import (
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
 )
 
-func SortDescriptors(descriptors []arch.FileDescriptor) {
+func SortFileTree[T any](list []T, getRel func(*T) (relPath arch.PathRelative, isDir bool)) {
 	tree := newNode("/")
-	for _, descriptor := range descriptors {
-		tree.append(&descriptor)
+	for _, elem := range list {
+		pathRel, isDir := getRel(&elem)
+		tree.append(value{pathRel: pathRel, isDir: isDir})
 	}
 	tree.sortLevels()
 
@@ -17,11 +18,14 @@ func SortDescriptors(descriptors []arch.FileDescriptor) {
 	newOrderMap := make(map[arch.PathRelative]int)
 
 	for order, dst := range newOrderList {
-		newOrderMap[dst.PathRel] = order
+		newOrderMap[dst.pathRel] = order
 	}
 
-	sort.Slice(descriptors, func(i, j int) bool {
-		orderI, orderJ := newOrderMap[descriptors[i].PathRel], newOrderMap[descriptors[j].PathRel]
+	sort.Slice(list, func(i, j int) bool {
+		pathRelI, _ := getRel(&list[i])
+		pathRelJ, _ := getRel(&list[j])
+
+		orderI, orderJ := newOrderMap[pathRelI], newOrderMap[pathRelJ]
 		return orderI <= orderJ
 	})
 }

@@ -6,7 +6,7 @@ import (
 
 type (
 	typeMatcher interface {
-		match(ctx *queryContext, query arch.FileQuery) ([]arch.FileDescriptor, error)
+		match(ctx *queryContext, query arch.FileQuery) ([]arch.PathDescriptor, error)
 	}
 
 	fileScanner interface {

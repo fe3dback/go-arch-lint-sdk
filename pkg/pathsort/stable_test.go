@@ -12,11 +12,11 @@ import (
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
 )
 
-func dsc(relPath string) arch.FileDescriptor {
+func dsc(relPath string) arch.PathDescriptor {
 	ext := filepath.Ext(relPath)
 	isDir := ext == ""
 
-	return arch.FileDescriptor{
+	return arch.PathDescriptor{
 		PathRel:   arch.PathRelative(relPath),
 		PathAbs:   arch.PathAbsolute("/project/" + relPath),
 		IsDir:     isDir,
@@ -25,7 +25,7 @@ func dsc(relPath string) arch.FileDescriptor {
 }
 
 func TestSortDescriptors(t *testing.T) {
-	want := []arch.FileDescriptor{
+	want := []arch.PathDescriptor{
 		dsc("conf/assembler"),
 		dsc("conf/assembler/tests"),
 		dsc("conf/assembler/tests/some.txt"),
@@ -47,17 +47,19 @@ func TestSortDescriptors(t *testing.T) {
 		dsc("project/validator/root.go"),
 	}
 
-	in := make([]arch.FileDescriptor, len(want))
+	in := make([]arch.PathDescriptor, len(want))
 	copy(in, want)
 
 	sort.Slice(in, func(_, _ int) bool {
 		return rand.Int31n(100) < 50
 	})
 
-	got := make([]arch.FileDescriptor, len(in))
+	got := make([]arch.PathDescriptor, len(in))
 	copy(got, in)
 
-	SortDescriptors(got)
+	SortFileTree(got, func(dsc *arch.PathDescriptor) (relPath arch.PathRelative, isDir bool) {
+		return dsc.PathRel, dsc.IsDir
+	})
 
 	if !assert.Equal(t, want, got) {
 		printSlice("in", in)
@@ -66,7 +68,7 @@ func TestSortDescriptors(t *testing.T) {
 	}
 }
 
-func printSlice(name string, list []arch.FileDescriptor) {
+func printSlice(name string, list []arch.PathDescriptor) {
 	fmt.Printf("%s:\n", name)
 
 	for _, value := range list {

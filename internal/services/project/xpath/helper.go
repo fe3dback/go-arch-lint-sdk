@@ -64,7 +64,7 @@ func (h *Helper) reindexProjectFilesIfNecessary() error {
 		extLower := strings.ToLower(filepath.Ext(path))
 		extLower = strings.TrimLeft(extLower, ".")
 
-		h.queryCtx.index.appendToIndex(relativePath, arch.FileDescriptor{
+		h.queryCtx.index.appendToIndex(relativePath, arch.PathDescriptor{
 			PathRel:   relativePath,
 			PathAbs:   arch.PathAbsolute(path),
 			IsDir:     isDir,
@@ -75,7 +75,7 @@ func (h *Helper) reindexProjectFilesIfNecessary() error {
 	})
 }
 
-func (h *Helper) FindProjectFiles(query arch.FileQuery) ([]arch.FileDescriptor, error) {
+func (h *Helper) FindProjectFiles(query arch.FileQuery) ([]arch.PathDescriptor, error) {
 	err := h.reindexProjectFilesIfNecessary()
 	if err != nil {
 		return nil, fmt.Errorf("failed build files index from project directory '%s': %w", h.queryCtx.projectDirectory, err)
@@ -98,7 +98,7 @@ func (h *Helper) FindProjectFiles(query arch.FileQuery) ([]arch.FileDescriptor, 
 	}
 
 	// filter
-	result := make([]arch.FileDescriptor, 0, len(found))
+	result := make([]arch.PathDescriptor, 0, len(found))
 	for _, dst := range found {
 		suitable, err := h.isSuitable(dst, &query)
 		if err != nil {
@@ -121,7 +121,7 @@ func (h *Helper) FindProjectFiles(query arch.FileQuery) ([]arch.FileDescriptor, 
 }
 
 //nolint:funlen
-func (h *Helper) isSuitable(dst arch.FileDescriptor, query *arch.FileQuery) (bool, error) {
+func (h *Helper) isSuitable(dst arch.PathDescriptor, query *arch.FileQuery) (bool, error) {
 	// only directories
 	if dst.IsDir && !(query.Type == arch.FileMatchQueryTypeAll || query.Type == arch.FileMatchQueryTypeOnlyDirectories) {
 		return false, nil

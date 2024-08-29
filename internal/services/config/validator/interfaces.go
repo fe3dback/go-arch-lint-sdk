@@ -9,5 +9,5 @@ type internalValidator interface {
 }
 
 type pathHelper interface {
-	FindProjectFiles(query arch.FileQuery) ([]arch.FileDescriptor, error)
+	FindProjectFiles(query arch.FileQuery) ([]arch.PathDescriptor, error)
 }

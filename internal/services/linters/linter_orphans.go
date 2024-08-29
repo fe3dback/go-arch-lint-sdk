@@ -26,11 +26,9 @@ func (o *Orphans) IsSuitable(_ *arch.Spec) bool {
 	return true
 }
 
-func (o *Orphans) Lint(_ *lintContext, spec *arch.Spec) ([]arch.LinterNotice, error) {
-	notices := make([]arch.LinterNotice, 0, len(spec.Orphans))
-
-	for _, orphan := range spec.Orphans {
-		notices = append(notices, arch.LinterNotice{
+func (o *Orphans) Lint(lCtx *lintContext) error {
+	for _, orphan := range lCtx.ro.spec.Orphans {
+		lCtx.state.AddNotice(arch.LinterNotice{
 			Message:   fmt.Sprintf("File '%s' not attached to any component in archfile", orphan.File.PathRel),
 			Reference: arch.NewFileReference(orphan.File.PathAbs),
 			Details: arch.LinterNoticeDetails{
@@ -43,5 +41,5 @@ func (o *Orphans) Lint(_ *lintContext, spec *arch.Spec) ([]arch.LinterNotice, er
 		})
 	}
 
-	return notices, nil
+	return nil
 }

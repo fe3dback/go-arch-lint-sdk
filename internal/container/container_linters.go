@@ -8,12 +8,15 @@ func (c *Container) lintersRoot() *linters.Root {
 	return once(func() *linters.Root {
 		return linters.NewRoot(
 			c.lintersOrphans(),
+			c.lintersImports(),
 		)
 	})
 }
 
 func (c *Container) lintersOrphans() *linters.Orphans {
-	return once(func() *linters.Orphans {
-		return linters.NewOrphans()
-	})
+	return once(linters.NewOrphans)
+}
+
+func (c *Container) lintersImports() *linters.Imports {
+	return once(linters.NewImports)
 }

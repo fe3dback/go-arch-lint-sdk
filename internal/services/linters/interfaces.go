@@ -11,6 +11,6 @@ type (
 	linter interface {
 		Information() arch.Linter
 		IsSuitable(roSpec *arch.Spec) bool
-		Lint(lCtx *lintContext, roSpec *arch.Spec) ([]arch.LinterNotice, error)
+		Lint(lCtx *lintContext) error
 	}
 )

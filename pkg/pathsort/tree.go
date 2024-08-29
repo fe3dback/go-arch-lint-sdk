@@ -12,7 +12,12 @@ type (
 		name   string
 		ptr    map[string]*node
 		child  []*node
-		values []*arch.FileDescriptor
+		values []value
+	}
+
+	value struct {
+		pathRel arch.PathRelative // todo :rename
+		isDir   bool
 	}
 )
 
@@ -21,12 +26,12 @@ func newNode(name string) *node {
 		name:   name,
 		ptr:    make(map[string]*node, 3),
 		child:  make([]*node, 0, 3),
-		values: make([]*arch.FileDescriptor, 0, 2),
+		values: make([]value, 0, 2),
 	}
 }
 
-func (t *node) append(value *arch.FileDescriptor) {
-	parts := strings.Split(string(value.PathRel), "/")
+func (t *node) append(value value) {
+	parts := strings.Split(string(value.pathRel), "/")
 
 	parent := t
 	length := len(parts)
@@ -56,11 +61,11 @@ func (t *node) sortLevels() {
 	t.ptr = nil
 
 	sort.Slice(t.values, func(i, j int) bool {
-		if t.values[i].IsDir != t.values[j].IsDir {
-			return t.values[i].IsDir
+		if t.values[i].isDir != t.values[j].isDir {
+			return t.values[i].isDir
 		}
 
-		return t.values[i].PathRel <= t.values[j].PathRel
+		return t.values[i].pathRel <= t.values[j].pathRel
 	})
 
 	sort.Slice(t.child, func(i, j int) bool {
@@ -79,12 +84,12 @@ func (t *node) sortLevels() {
 	}
 }
 
-func (t *node) traversalDepthFirst() []*arch.FileDescriptor {
+func (t *node) traversalDepthFirst() []value {
 	return recursiveExtractLeafsDepthFirst(t)
 }
 
-func recursiveExtractLeafsDepthFirst(node *node) []*arch.FileDescriptor {
-	list := make([]*arch.FileDescriptor, 0, len(node.values)+len(node.ptr))
+func recursiveExtractLeafsDepthFirst(node *node) []value {
+	list := make([]value, 0, len(node.values)+len(node.ptr))
 
 	list = append(list, node.values...)
 

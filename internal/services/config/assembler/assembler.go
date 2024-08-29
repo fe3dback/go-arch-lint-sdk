@@ -72,8 +72,8 @@ func (a *Assembler) Assemble(conf models.Config) (spec arch.Spec, err error) {
 			AllowAllVendorDeps:  rules.AnyVendorDeps,
 			AllowAllTags:        tagsAllowedAll,
 			AllowedTags:         tagsAllowedWhiteList,
-			MayDependOn:         rules.MayDependOn,
-			CanUse:              rules.CanUse,
+			MayDependOn:         append(conf.CommonComponents, rules.MayDependOn...),
+			CanUse:              append(conf.CommonVendors, rules.CanUse...),
 			MatchPatterns:       definition.In,
 			MatchedFiles:        matchedFiles,
 		})
@@ -88,8 +88,8 @@ func (a *Assembler) Assemble(conf models.Config) (spec arch.Spec, err error) {
 
 	// find matched/owned packages from files
 	for _, component := range components {
-		component.MatchedPackages = a.extractUniquePackages(component.MatchedFiles)
-		component.OwnedPackages = a.extractUniquePackages(component.OwnedFiles)
+		component.MatchedPackages = a.extractUniquePackages(projectInfo, component.MatchedFiles)
+		component.OwnedPackages = a.extractUniquePackages(projectInfo, component.OwnedFiles)
 	}
 
 	// find orphan files
@@ -117,11 +117,18 @@ func (a *Assembler) Assemble(conf models.Config) (spec arch.Spec, err error) {
 	}
 
 	// sort paths
+	providerPathFn := func(p *arch.PathDescriptor) (relPath arch.PathRelative, isDir bool) {
+		return p.PathRel, p.IsDir
+	}
+	providerPackageFn := func(p *arch.PackageDescriptor) (relPath arch.PathRelative, isDir bool) {
+		return p.PathRel, p.IsDir
+	}
+
 	for _, component := range components {
-		pathsort.SortDescriptors(component.MatchedFiles)
-		pathsort.SortDescriptors(component.MatchedPackages)
-		pathsort.SortDescriptors(component.OwnedFiles)
-		pathsort.SortDescriptors(component.OwnedPackages)
+		pathsort.SortFileTree(component.MatchedFiles, providerPathFn)
+		pathsort.SortFileTree(component.MatchedPackages, providerPackageFn)
+		pathsort.SortFileTree(component.OwnedFiles, providerPathFn)
+		pathsort.SortFileTree(component.OwnedPackages, providerPackageFn)
 	}
 
 	// finalize
@@ -130,10 +137,17 @@ func (a *Assembler) Assemble(conf models.Config) (spec arch.Spec, err error) {
 		resultComponents = append(resultComponents, *component)
 	}
 
+	// build map with component links
+	componentsByNameLinks := make(map[arch.ComponentName]*arch.SpecComponent, len(components))
+	for _, component := range resultComponents {
+		componentsByNameLinks[component.Name.Value] = &component
+	}
+
 	return arch.Spec{
 		Project:          projectInfo,
 		WorkingDirectory: conf.WorkingDirectory,
 		Components:       resultComponents,
+		ComponentsByName: componentsByNameLinks,
 		Orphans:          orphanFiles,
 	}, nil
 }
@@ -153,8 +167,8 @@ func (a *Assembler) figureOutAllowedStructTags(conf *models.Config, rules *model
 	return arch.NewRef(false, conf.Settings.Tags.Allowed.Ref), allowedList
 }
 
-func (a *Assembler) findOwnedFiles(conf *models.Config, component models.ConfigComponent) ([]arch.FileDescriptor, error) {
-	list := make([]arch.FileDescriptor, 0, 32)
+func (a *Assembler) findOwnedFiles(conf *models.Config, component models.ConfigComponent) ([]arch.PathDescriptor, error) {
+	list := make([]arch.PathDescriptor, 0, 32)
 
 	for _, globPath := range component.In {
 		// convert directory glob to file scope glob
@@ -189,8 +203,8 @@ func (a *Assembler) findOwnedFiles(conf *models.Config, component models.ConfigC
 	return list, nil
 }
 
-func (a *Assembler) extractUniquePackages(files []arch.FileDescriptor) []arch.FileDescriptor {
-	packages := make([]arch.FileDescriptor, 0, len(files))
+func (a *Assembler) extractUniquePackages(project arch.ProjectInfo, files []arch.PathDescriptor) []arch.PackageDescriptor {
+	packages := make([]arch.PackageDescriptor, 0, len(files))
 	unique := make(map[arch.PathRelative]any)
 
 	for _, file := range files {
@@ -202,12 +216,21 @@ func (a *Assembler) extractUniquePackages(files []arch.FileDescriptor) []arch.Fi
 		}
 
 		unique[packagePathRelative] = struct{}{}
-		packages = append(packages, arch.FileDescriptor{
+
+		pathDescriptor := arch.PathDescriptor{
 			PathRel: packagePathRelative,
 			PathAbs: packagePathAbsolute,
 			IsDir:   true,
+		}
+		packages = append(packages, arch.PackageDescriptor{
+			PathDescriptor: pathDescriptor,
+			Import:         a.transformToImportPath(project, pathDescriptor),
 		})
 	}
 
 	return packages
+}
+
+func (a *Assembler) transformToImportPath(project arch.ProjectInfo, ownedPackage arch.PathDescriptor) arch.PathImport {
+	return arch.PathImport(string(project.Module) + "/" + string(ownedPackage.PathRel))
 }

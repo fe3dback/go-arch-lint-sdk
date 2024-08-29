@@ -2,9 +2,11 @@ package linters
 
 import (
 	"fmt"
+	"go/token"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/tools/go/packages"
 
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
 )
@@ -42,7 +44,10 @@ func (l *Root) Lint(spec arch.Spec) ([]arch.LinterResult, error) {
 	var mux sync.Mutex
 
 	results := make([]arch.LinterResult, 0, len(l.linters))
-	lCtx := lintContext{}
+	roCtx, err := l.prepareLintContext(&spec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare lint context: %w", err)
+	}
 
 	eg := new(errgroup.Group)
 
@@ -58,15 +63,20 @@ func (l *Root) Lint(spec arch.Spec) ([]arch.LinterResult, error) {
 			}
 
 			if info.Used {
-				// spec is RO
-				// lCtx must be guarded inside linter
+				lintCtx := lintContext{
+					ro: &roCtx,
+					state: &lintContextMutable{
+						mux:     &sync.Mutex{},
+						notices: make([]arch.LinterNotice, 0, 16),
+					},
+				}
 
-				notices, err := linter.Lint(&lCtx, &spec)
+				err := linter.Lint(&lintCtx)
 				if err != nil {
 					return fmt.Errorf("linter %T failed: %w", linter, err)
 				}
 
-				result.Notices = notices
+				result.Notices = lintCtx.state.Notices()
 			}
 
 			mux.Lock()
@@ -77,10 +87,107 @@ func (l *Root) Lint(spec arch.Spec) ([]arch.LinterResult, error) {
 		})
 	}
 
-	err := eg.Wait()
+	err = eg.Wait()
 	if err != nil {
 		return nil, fmt.Errorf("run linters failed: %w", err)
 	}
 
 	return results, nil
+}
+
+func (l *Root) prepareLintContext(spec *arch.Spec) (lintContextReadOnly, error) {
+	fileSet := token.NewFileSet()
+
+	parsedPackages, err := l.parsePackages(fileSet, spec)
+	if err != nil {
+		return lintContextReadOnly{}, fmt.Errorf("failed to parse packages: %w", err)
+	}
+
+	parsedStdPackagesIDs, err := l.parseStdPackageIDs(fileSet)
+	if err != nil {
+		return lintContextReadOnly{}, fmt.Errorf("failed to parse go std packages: %w", err)
+	}
+
+	lCtx := lintContextReadOnly{
+		spec:          spec,
+		fileSet:       fileSet,
+		stdPackageIDs: parsedStdPackagesIDs,
+		packages:      parsedPackages,
+	}
+
+	return lCtx, nil
+}
+
+func (l *Root) parseStdPackageIDs(fileSet *token.FileSet) (map[arch.PathImport]any, error) {
+	cfg := &packages.Config{
+		Mode: packages.NeedName,
+		Fset: fileSet,
+	}
+
+	stdPackages, err := packages.Load(cfg, "std")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load standard packages: %w", err)
+	}
+
+	stdPackageIDs := make(map[arch.PathImport]any, 128)
+
+	for _, stdPackage := range stdPackages {
+		stdPackageIDs[arch.PathImport(stdPackage.ID)] = struct{}{}
+	}
+
+	return stdPackageIDs, nil
+}
+
+func (l *Root) parsePackages(fileSet *token.FileSet, spec *arch.Spec) (packagesMap, error) {
+	const parseMode = packages.NeedName |
+		packages.NeedFiles |
+		packages.NeedTypes |
+		packages.NeedSyntax |
+		packages.NeedTypesInfo
+
+	directoriesList := map[arch.PathAbsolute]*arch.PackageDescriptor{}
+	for _, cmp := range spec.Components {
+		for _, ownedDirectory := range cmp.OwnedPackages {
+			directoriesList[ownedDirectory.PathAbs] = &ownedDirectory
+		}
+	}
+
+	var wg errgroup.Group
+	var mux sync.Mutex
+	wg.SetLimit(16)
+
+	packagesMap := make(packagesMap, len(directoriesList)*2)
+
+	for directory, dst := range directoriesList {
+		directory := directory
+		dst := dst
+
+		wg.Go(func() error {
+			cfg := &packages.Config{
+				Mode: parseMode,
+				Fset: fileSet,
+				Dir:  string(directory),
+			}
+
+			parsedPackages, err := packages.Load(cfg, string(directory))
+			if err != nil {
+				return fmt.Errorf("failed parse go source at '%s': %w", dst.PathRel, err)
+			}
+
+			mux.Lock()
+			for _, goPackage := range parsedPackages {
+				packagesMap[dst.PathRel] = append(packagesMap[dst.PathRel], goPackage)
+			}
+			mux.Unlock()
+
+			return nil
+		})
+	}
+
+	err := wg.Wait()
+	if err != nil {
+		return nil, fmt.Errorf("parse in goroutines failed: %w", err)
+	}
+
+	return packagesMap, nil
 }

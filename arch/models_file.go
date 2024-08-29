@@ -1,12 +1,19 @@
 package arch
 
-// FileDescriptor hold meta information for specific file path
-// FileDescriptor is not synced with OS anyway and can contain old (irrelevant) information
-type FileDescriptor struct {
+// PathDescriptor hold meta information for specific file path
+// PathDescriptor is not synced with OS anyway and can contain old (irrelevant) information
+type PathDescriptor struct {
 	PathRel   PathRelative // relative to (projectDirectory + workingDirectory)
 	PathAbs   PathAbsolute
 	IsDir     bool
 	Extension string // in lowercase
+}
+
+// PackageDescriptor is extension for PathDescriptor but can describe
+// only go packages. Also, this struct contain import path for this go package
+type PackageDescriptor struct {
+	PathDescriptor
+	Import PathImport
 }
 
 type FileMatchQueryType string

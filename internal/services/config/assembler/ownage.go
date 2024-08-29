@@ -20,7 +20,7 @@ func (a *Assembler) calculateFilesOwnage(components []*arch.SpecComponent) {
 
 	// Just map from input components array
 	componentsMap := make(map[arch.ComponentName]*arch.SpecComponent)
-	descriptorsMap := make(map[arch.PathRelative]*arch.FileDescriptor)
+	descriptorsMap := make(map[arch.PathRelative]*arch.PathDescriptor)
 
 	// populate utils maps
 	for _, component := range components {

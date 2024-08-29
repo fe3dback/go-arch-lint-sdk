@@ -20,7 +20,7 @@ func NewMatcherAbsolute(
 	}
 }
 
-func (m *MatcherAbsolute) match(ctx *queryContext, query arch.FileQuery) ([]arch.FileDescriptor, error) {
+func (m *MatcherAbsolute) match(ctx *queryContext, query arch.FileQuery) ([]arch.PathDescriptor, error) {
 	path := query.Path.(arch.PathAbsolute) // guaranteed by root composite
 	path = arch.PathAbsolute(pathUtils.Join(string(query.WorkingDirectory), string(path)))
 
