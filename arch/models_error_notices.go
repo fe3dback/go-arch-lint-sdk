@@ -3,6 +3,8 @@ package arch
 import (
 	"bytes"
 	"fmt"
+
+	"github.com/fe3dback/go-arch-lint-sdk/pkg/stringutil"
 )
 
 type (
@@ -36,7 +38,16 @@ func (en ErrorWithNotices) Error() string {
 		buf.WriteString(fmt.Sprintf("Found %d notices:\n", len(en.Notices)))
 
 		for _, notice := range en.Notices {
-			buf.WriteString(fmt.Sprintf("- %s\n", notice.Message))
+			buf.WriteString(fmt.Sprintf(" - %s\n", notice.Message))
+
+			if notice.Reference.Valid {
+				buf.WriteString(fmt.Sprintf("   at %s:%d\n", notice.Reference.File, notice.Reference.Line))
+
+				if preview, ok := printCode(notice.Reference); ok {
+					buf.WriteString(stringutil.PrefixLines(preview, "      "))
+					buf.WriteString("      \n")
+				}
+			}
 		}
 
 		return buf.String()

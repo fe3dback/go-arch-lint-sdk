@@ -2,17 +2,19 @@ package sdk
 
 import (
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
-	"github.com/fe3dback/go-arch-lint-sdk/cfg"
 	"github.com/fe3dback/go-arch-lint-sdk/commands/check"
 	"github.com/fe3dback/go-arch-lint-sdk/commands/mapping"
+	"github.com/fe3dback/go-arch-lint-sdk/definition"
 	"github.com/fe3dback/go-arch-lint-sdk/internal/container"
+	"github.com/fe3dback/go-arch-lint-sdk/internal/models"
 )
 
 type (
 	// SDK is root type for any other interaction with SDK
 	// and all functions.
 	SDK struct {
-		di *container.Container
+		projectDirectory arch.PathAbsolute
+		di               *container.Container
 	}
 )
 
@@ -34,6 +36,7 @@ func NewSDK(projectDirectory arch.PathAbsolute, opts ...CreateOptionsFn) *SDK {
 	}
 
 	return &SDK{
+		projectDirectory: projectDirectory,
 		di: container.NewContainer(
 			projectDirectory,
 			opt.usedContext,
@@ -44,7 +47,7 @@ func NewSDK(projectDirectory arch.PathAbsolute, opts ...CreateOptionsFn) *SDK {
 
 // Spec returns config builder / fetcher
 // Next you can use FromXXX method on it, to get proper Arch specification to work with.
-func (sdk *SDK) Spec() *cfg.Definition {
+func (sdk *SDK) Spec() *definition.Definition {
 	return sdk.di.ConfigDefinition()
 }
 
@@ -52,10 +55,31 @@ func (sdk *SDK) Spec() *cfg.Definition {
 // components defined in spec, it useful for debugging purpose
 // (ex: find out how glob path's (ex: "domain/*/repos/**") cover your go files
 func (sdk *SDK) Mapping(spec arch.Spec, in mapping.In) (mapping.Out, error) {
-	return sdk.di.OperationMapping().Execute(spec, in)
+	out, err := sdk.di.OperationMapping().Execute(spec, in)
+	err = sdk.wrapErrWithFriendlyHelp(err)
+
+	return out, err
 }
 
 // Check will run all configured arch linters and return all found notices
 func (sdk *SDK) Check(spec arch.Spec, in check.In) (check.Out, error) {
-	return sdk.di.OperationCheck().Execute(spec, in)
+	out, err := sdk.di.OperationCheck().Execute(spec, in)
+	err = sdk.wrapErrWithFriendlyHelp(err)
+
+	return out, err
+}
+
+func (sdk *SDK) wrapErrWithFriendlyHelp(err error) error {
+	// happy path
+	if err == nil {
+		return nil
+	}
+
+	// already wrapped, skip
+	if _, ok := err.(models.SDKError); ok {
+		return err
+	}
+
+	// wrap
+	return models.NewSDKError(err, sdk.projectDirectory)
 }

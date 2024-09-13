@@ -1,4 +1,4 @@
-package cfg
+package definition
 
 import (
 	"github.com/fe3dback/go-arch-lint-sdk/arch"

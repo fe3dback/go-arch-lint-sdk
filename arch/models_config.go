@@ -6,6 +6,10 @@ const (
 	ConfigSettingsTagsEnumList ConfigSettingsTagsEnum = "List"
 )
 
+const (
+	ConfigVersion4 = ConfigVersion(4)
+)
+
 type (
 	// ConfigVersion primary arch-lint config version
 	ConfigVersion int
