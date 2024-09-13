@@ -12,20 +12,17 @@ type comparableComponent struct {
 	concatMatchPattern string             // concat of all `component.in` in one string
 }
 
-func (a *Assembler) calculateFilesOwnage(components []*arch.SpecComponent) {
+func (a *Assembler) calculateFilesOwnage(components arch.Components) {
 	// a.go     -> [cmpA, cmpB]
 	// dir/b.go -> [cmpA]
 	// dir/c.go -> [cmpB, cmpA, cmpC]
 	filePotentialOwners := make(map[arch.PathRelative][]arch.ComponentName)
 
 	// Just map from input components array
-	componentsMap := make(map[arch.ComponentName]*arch.SpecComponent)
 	descriptorsMap := make(map[arch.PathRelative]*arch.PathDescriptor)
 
 	// populate utils maps
 	for _, component := range components {
-		componentsMap[component.Name.Value] = component
-
 		for _, file := range component.MatchedFiles {
 			descriptorsMap[file.PathRel] = &file
 
@@ -39,17 +36,17 @@ func (a *Assembler) calculateFilesOwnage(components []*arch.SpecComponent) {
 
 	for file, potentialOwners := range filePotentialOwners {
 		// find best owner
-		owner := a.calculateFileOwner(potentialOwners, componentsMap)
+		owner := a.calculateFileOwner(potentialOwners, components)
 		fileDsc := descriptorsMap[file]
 
 		// add this file to owner
-		componentsMap[owner].OwnedFiles = append(componentsMap[owner].OwnedFiles, *fileDsc)
+		components[owner].OwnedFiles = append(components[owner].OwnedFiles, *fileDsc)
 	}
 }
 
 func (a *Assembler) calculateFileOwner(
 	potentialOwners []arch.ComponentName,
-	components map[arch.ComponentName]*arch.SpecComponent,
+	components arch.Components,
 ) arch.ComponentName {
 	// this file matcher only by one component
 	if len(potentialOwners) == 1 {

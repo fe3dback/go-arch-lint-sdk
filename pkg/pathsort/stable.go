@@ -21,7 +21,7 @@ func SortFileTree[T any](list []T, getRel func(*T) (relPath arch.PathRelative, i
 		newOrderMap[dst.pathRel] = order
 	}
 
-	sort.Slice(list, func(i, j int) bool {
+	sort.SliceStable(list, func(i, j int) bool {
 		pathRelI, _ := getRel(&list[i])
 		pathRelJ, _ := getRel(&list[j])
 

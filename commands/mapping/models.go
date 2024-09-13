@@ -26,12 +26,14 @@ type (
 	}
 
 	OutGrouped struct {
-		ComponentName string   `json:"ComponentName"`
-		Packages      []string `json:"Packages"`
+		ComponentName  string   `json:"ComponentName"`
+		ComponentExist bool     `json:"ComponentExist"`
+		Packages       []string `json:"Packages"`
 	}
 
 	OutList struct {
-		Package       string `json:"Package"`
-		ComponentName string `json:"ComponentName"`
+		Package        string `json:"Package"`
+		ComponentName  string `json:"ComponentName"`
+		ComponentExist bool   `json:"ComponentExist"`
 	}
 )

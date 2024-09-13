@@ -60,7 +60,7 @@ func (t *node) append(value value) {
 func (t *node) sortLevels() {
 	t.ptr = nil
 
-	sort.Slice(t.values, func(i, j int) bool {
+	sort.SliceStable(t.values, func(i, j int) bool {
 		if t.values[i].isDir != t.values[j].isDir {
 			return t.values[i].isDir
 		}
@@ -68,7 +68,7 @@ func (t *node) sortLevels() {
 		return t.values[i].pathRel <= t.values[j].pathRel
 	})
 
-	sort.Slice(t.child, func(i, j int) bool {
+	sort.SliceStable(t.child, func(i, j int) bool {
 		isDirI := len(t.child[i].child) > 0
 		isDirJ := len(t.child[j].child) > 0
 

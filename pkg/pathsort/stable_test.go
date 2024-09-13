@@ -26,6 +26,11 @@ func dsc(relPath string) arch.PathDescriptor {
 
 func TestSortDescriptors(t *testing.T) {
 	want := []arch.PathDescriptor{
+		dsc("/internal/d"),
+		dsc("/internal/d/models/a/model"),
+		dsc("/internal/d/models/b/model"),
+		dsc("/internal/b"),
+		dsc("/internal/c"),
 		dsc("conf/assembler"),
 		dsc("conf/assembler/tests"),
 		dsc("conf/assembler/tests/some.txt"),

@@ -23,24 +23,46 @@ func NewAssembler(projectInfoFetcher projectInfoFetcher, pathHelper pathHelper) 
 	}
 }
 
-// nolint
 func (a *Assembler) Assemble(conf models.Config) (spec arch.Spec, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("failed assemble: %v\n%s", r, debug.Stack())
-		}
-	}()
-
 	projectInfo, err := a.projectInfoFetcher.Fetch()
 	if err != nil {
 		return arch.Spec{}, fmt.Errorf("failed fetch project info: %w", err)
 	}
 
-	components := make([]*arch.SpecComponent, 0, conf.Dependencies.Map.Len())
-	mappedFiles := make(map[arch.PathRelative]any, 128)
+	components, err := a.assembleComponents(&conf, &projectInfo)
+	if err != nil {
+		return arch.Spec{}, fmt.Errorf("failed assemble components: %w", err)
+	}
+
+	vendors, err := a.assembleVendors(&conf)
+	if err != nil {
+		return arch.Spec{}, fmt.Errorf("failed assemble vendors: %w", err)
+	}
+
+	orphans, err := a.assembleOrphans(&conf, components)
+	if err != nil {
+		return spec, fmt.Errorf("failed assembling orphans: %w", err)
+	}
+
+	return arch.Spec{
+		Project:          projectInfo,
+		WorkingDirectory: conf.WorkingDirectory,
+		Components:       components,
+		Vendors:          vendors,
+		Orphans:          orphans,
+	}, nil
+}
+
+func (a *Assembler) assembleComponents(conf *models.Config, project *arch.ProjectInfo) (result arch.Components, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("failed assemble components: %v\n%s", r, debug.Stack())
+		}
+	}()
+
+	components := make(arch.Components, conf.Components.Map.Len())
 
 	conf.Components.Map.Each(func(name arch.ComponentName, definition models.ConfigComponent, definitionRef arch.Reference) {
-
 		rules, rulesRef, exist := conf.Dependencies.Map.Get(name)
 		if !exist {
 			// defaults for rules
@@ -55,14 +77,14 @@ func (a *Assembler) Assemble(conf models.Config) (spec arch.Spec, err error) {
 			deepScan = conf.Settings.DeepScan
 		}
 
-		tagsAllowedAll, tagsAllowedWhiteList := a.figureOutAllowedStructTags(&conf, &rules)
+		tagsAllowedAll, tagsAllowedWhiteList := a.figureOutAllowedStructTags(conf, &rules)
 
-		matchedFiles, err := a.findOwnedFiles(&conf, definition)
+		matchedFiles, err := a.findOwnedFiles(conf, definition)
 		if err != nil {
 			panic(fmt.Errorf("failed finding owned files by component '%s': %w", name, err))
 		}
 
-		components = append(components, &arch.SpecComponent{
+		components[name] = &arch.SpecComponent{
 			Name:                arch.NewRef(name, definitionRef),
 			DefinitionComponent: definitionRef,
 			DefinitionDeps:      rulesRef,
@@ -76,10 +98,6 @@ func (a *Assembler) Assemble(conf models.Config) (spec arch.Spec, err error) {
 			CanUse:              append(conf.CommonVendors, rules.CanUse...),
 			MatchPatterns:       definition.In,
 			MatchedFiles:        matchedFiles,
-		})
-
-		for _, dst := range matchedFiles {
-			mappedFiles[dst.PathRel] = struct{}{}
 		}
 	})
 
@@ -88,32 +106,8 @@ func (a *Assembler) Assemble(conf models.Config) (spec arch.Spec, err error) {
 
 	// find matched/owned packages from files
 	for _, component := range components {
-		component.MatchedPackages = a.extractUniquePackages(projectInfo, component.MatchedFiles)
-		component.OwnedPackages = a.extractUniquePackages(projectInfo, component.OwnedFiles)
-	}
-
-	// find orphan files
-	files, err := a.pathHelper.FindProjectFiles(arch.FileQuery{
-		Path:               arch.PathRelativeGlob("*/**"),
-		WorkingDirectory:   conf.WorkingDirectory.Value,
-		Type:               arch.FileMatchQueryTypeOnlyFiles,
-		ExcludeDirectories: conf.Exclude.RelativeDirectories.Values(),
-		ExcludeRegexp:      conf.Exclude.RelativeFiles.Values(),
-		Extensions:         []string{"go"},
-	})
-	if err != nil {
-		return arch.Spec{}, fmt.Errorf("failed finding project files: %w", err)
-	}
-
-	orphanFiles := make([]arch.SpecOrphan, 0, 32)
-	for _, projectFile := range files {
-		if _, mapped := mappedFiles[projectFile.PathRel]; mapped {
-			continue
-		}
-
-		orphanFiles = append(orphanFiles, arch.SpecOrphan{
-			File: projectFile,
-		})
+		component.MatchedPackages = a.extractUniquePackages(project, component.MatchedFiles)
+		component.OwnedPackages = a.extractUniquePackages(project, component.OwnedFiles)
 	}
 
 	// sort paths
@@ -131,25 +125,60 @@ func (a *Assembler) Assemble(conf models.Config) (spec arch.Spec, err error) {
 		pathsort.SortFileTree(component.OwnedPackages, providerPackageFn)
 	}
 
-	// finalize
-	resultComponents := make([]arch.SpecComponent, 0, len(components))
+	return components, nil
+}
+
+func (a *Assembler) assembleVendors(conf *models.Config) (arch.Vendors, error) {
+	vendors := make(arch.Vendors, conf.Vendors.Map.Len())
+
+	conf.Vendors.Map.Each(func(name arch.VendorName, vendor models.ConfigVendor, definitionRef arch.Reference) {
+		vendors[name] = &arch.SpecVendor{
+			Name:         arch.NewRef(name, definitionRef),
+			Definition:   definitionRef,
+			OwnedImports: vendor.In,
+		}
+	})
+
+	return vendors, nil
+}
+
+func (a *Assembler) assembleOrphans(conf *models.Config, components arch.Components) ([]arch.SpecOrphan, error) {
+	mappedFiles := make(map[arch.PathRelative]any, 128)
 	for _, component := range components {
-		resultComponents = append(resultComponents, *component)
+		for _, dst := range component.MatchedFiles {
+			mappedFiles[dst.PathRel] = struct{}{}
+		}
 	}
 
-	// build map with component links
-	componentsByNameLinks := make(map[arch.ComponentName]*arch.SpecComponent, len(components))
-	for _, component := range resultComponents {
-		componentsByNameLinks[component.Name.Value] = &component
+	// find orphan files
+	files, err := a.pathHelper.FindProjectFiles(arch.FileQuery{
+		Path:               arch.PathRelativeGlob("*/**"),
+		WorkingDirectory:   conf.WorkingDirectory.Value,
+		Type:               arch.FileMatchQueryTypeOnlyFiles,
+		ExcludeDirectories: conf.Exclude.RelativeDirectories.Values(),
+		ExcludeRegexp:      conf.Exclude.RelativeFiles.Values(),
+		Extensions:         []string{"go"},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed finding project files: %w", err)
 	}
 
-	return arch.Spec{
-		Project:          projectInfo,
-		WorkingDirectory: conf.WorkingDirectory,
-		Components:       resultComponents,
-		ComponentsByName: componentsByNameLinks,
-		Orphans:          orphanFiles,
-	}, nil
+	list := make([]arch.SpecOrphan, 0, 32)
+	for _, projectFile := range files {
+		if _, mapped := mappedFiles[projectFile.PathRel]; mapped {
+			continue
+		}
+
+		list = append(list, arch.SpecOrphan{
+			File: projectFile,
+		})
+	}
+
+	pathsort.SortFileTree(list, func(a *arch.SpecOrphan) (relPath arch.PathRelative, isDir bool) {
+		return a.File.PathRel, false
+	})
+
+	return list, nil
 }
 
 func (a *Assembler) figureOutAllowedStructTags(conf *models.Config, rules *models.ConfigComponentDependencies) (arch.Ref[bool], arch.RefSlice[arch.StructTag]) {
@@ -203,7 +232,7 @@ func (a *Assembler) findOwnedFiles(conf *models.Config, component models.ConfigC
 	return list, nil
 }
 
-func (a *Assembler) extractUniquePackages(project arch.ProjectInfo, files []arch.PathDescriptor) []arch.PackageDescriptor {
+func (a *Assembler) extractUniquePackages(project *arch.ProjectInfo, files []arch.PathDescriptor) []arch.PackageDescriptor {
 	packages := make([]arch.PackageDescriptor, 0, len(files))
 	unique := make(map[arch.PathRelative]any)
 
@@ -231,6 +260,6 @@ func (a *Assembler) extractUniquePackages(project arch.ProjectInfo, files []arch
 	return packages
 }
 
-func (a *Assembler) transformToImportPath(project arch.ProjectInfo, ownedPackage arch.PathDescriptor) arch.PathImport {
+func (a *Assembler) transformToImportPath(project *arch.ProjectInfo, ownedPackage arch.PathDescriptor) arch.PathImport {
 	return arch.PathImport(string(project.Module) + "/" + string(ownedPackage.PathRel))
 }

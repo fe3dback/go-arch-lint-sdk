@@ -113,7 +113,7 @@ func (h *Helper) FindProjectFiles(query arch.FileQuery) ([]arch.PathDescriptor, 
 	}
 
 	// sort
-	sort.Slice(result, func(i, j int) bool {
+	sort.SliceStable(result, func(i, j int) bool {
 		return result[i].PathRel < result[j].PathRel
 	})
 
@@ -140,13 +140,18 @@ func (h *Helper) isSuitable(dst arch.PathDescriptor, query *arch.FileQuery) (boo
 
 	// exclude by directory
 	if len(query.ExcludeDirectories) > 0 {
-		excludedDirs := make([]arch.PathRelative, 0, len(query.ExcludeDirectories))
+		excludedDirPrefixes := make([]arch.PathRelative, 0, len(query.ExcludeDirectories))
 		for _, excDirectory := range query.ExcludeDirectories {
-			excludedDirs = append(excludedDirs, arch.PathRelative(filepath.Join(string(query.WorkingDirectory), string(excDirectory))))
+			excludedDirPrefixes = append(
+				excludedDirPrefixes,
+				arch.PathRelative(filepath.Join(string(query.WorkingDirectory), string(excDirectory))),
+			)
 		}
 
-		if slices.Contains(excludedDirs, dstDirectory) {
-			return false, nil
+		for _, directoryPrefix := range excludedDirPrefixes {
+			if strings.HasPrefix(string(dstDirectory), string(directoryPrefix)) {
+				return false, nil
+			}
 		}
 	}
 
