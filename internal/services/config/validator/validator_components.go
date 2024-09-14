@@ -3,6 +3,8 @@ package validator
 import (
 	"fmt"
 
+	"github.com/gobwas/glob"
+
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
 	"github.com/fe3dback/go-arch-lint-sdk/internal/models"
 )
@@ -31,6 +33,15 @@ func (c *ComponentsValidator) Validate(ctx *validationContext) {
 
 	ctx.conf.Components.Map.Each(func(_ arch.ComponentName, component models.ConfigComponent, _ arch.Reference) {
 		for _, pathGlob := range component.In {
+			_, err := glob.Compile(string(pathGlob.Value), '/')
+			if err != nil {
+				ctx.AddNotice(
+					fmt.Sprintf("invalid glob path '%s': %v", pathGlob.Value, err),
+					pathGlob.Ref,
+				)
+				return
+			}
+
 			matched, err := c.pathHelper.FindProjectFiles(arch.FileQuery{
 				Path:             pathGlob.Value,
 				WorkingDirectory: ctx.conf.WorkingDirectory.Value,

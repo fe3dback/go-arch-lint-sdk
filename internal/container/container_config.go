@@ -29,6 +29,7 @@ func (c *Container) serviceConfigValidator() *validator.Root {
 			c.serviceConfigValidatorCmnComponents(),
 			c.serviceConfigValidatorCmnVendors(),
 			c.serviceConfigValidatorComponents(),
+			c.serviceConfigValidatorVendors(),
 			c.serviceConfigValidatorDeps(),
 			c.serviceConfigValidatorDepsComponents(),
 			c.serviceConfigValidatorDepsVendors(),
@@ -62,6 +63,14 @@ func (c *Container) serviceConfigValidatorCmnVendors() *validator.CommonVendorsV
 func (c *Container) serviceConfigValidatorComponents() *validator.ComponentsValidator {
 	return once(func() *validator.ComponentsValidator {
 		return validator.NewComponentsValidator(
+			c.serviceProjectPathHelper(),
+		)
+	})
+}
+
+func (c *Container) serviceConfigValidatorVendors() *validator.VendorsValidator {
+	return once(func() *validator.VendorsValidator {
+		return validator.NewVendorsValidator(
 			c.serviceProjectPathHelper(),
 		)
 	})

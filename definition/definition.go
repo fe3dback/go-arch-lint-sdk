@@ -7,6 +7,7 @@ import (
 type (
 	Definition struct {
 		projectPath arch.PathAbsolute
+		usedContext arch.UsedContext
 		reader      reader
 		validator   validator
 		assembler   assembler
@@ -15,12 +16,14 @@ type (
 
 func NewDefinition(
 	projectPath arch.PathAbsolute,
+	usedContext arch.UsedContext,
 	reader reader,
 	validator validator,
 	assembler assembler,
 ) *Definition {
 	return &Definition{
 		projectPath: projectPath,
+		usedContext: usedContext,
 		reader:      reader,
 		validator:   validator,
 		assembler:   assembler,

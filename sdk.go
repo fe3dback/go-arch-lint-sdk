@@ -14,6 +14,7 @@ type (
 	// and all functions.
 	SDK struct {
 		projectDirectory arch.PathAbsolute
+		usedContext      arch.UsedContext
 		di               *container.Container
 	}
 )
@@ -37,6 +38,7 @@ func NewSDK(projectDirectory arch.PathAbsolute, opts ...CreateOptionsFn) *SDK {
 
 	return &SDK{
 		projectDirectory: projectDirectory,
+		usedContext:      opt.usedContext,
 		di: container.NewContainer(
 			projectDirectory,
 			opt.usedContext,
@@ -73,6 +75,11 @@ func (sdk *SDK) wrapErrWithFriendlyHelp(err error) error {
 	// happy path
 	if err == nil {
 		return nil
+	}
+
+	// no not wrap anything if we in CLI context
+	if sdk.usedContext == arch.UsedContextCLI {
+		return err
 	}
 
 	// already wrapped, skip

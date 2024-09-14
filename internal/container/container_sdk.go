@@ -6,6 +6,7 @@ func (c *Container) ConfigDefinition() *definition.Definition {
 	return once(func() *definition.Definition {
 		return definition.NewDefinition(
 			c.projectDirectory,
+			c.usedContext,
 			c.serviceConfigReader(),
 			c.serviceConfigValidator(),
 			c.serviceConfigAssembler(),

@@ -5,10 +5,13 @@ import (
 	"go/ast"
 	"strings"
 
+	"github.com/gobwas/glob"
+
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
 )
 
 type Imports struct {
+	importGlobCache map[arch.PathImportGlob]glob.Glob
 }
 
 type (
@@ -22,7 +25,9 @@ const (
 )
 
 func NewImports() *Imports {
-	return &Imports{}
+	return &Imports{
+		importGlobCache: make(map[arch.PathImportGlob]glob.Glob, 32),
+	}
 }
 
 func (o *Imports) Information() arch.Linter {
@@ -146,17 +151,27 @@ func (o *Imports) isVendorImportAllowed(lCtx *lintContext, component *arch.SpecC
 		dependVendor := lCtx.ro.spec.Vendors[dependVendorID.Value]
 
 		for _, vendorImport := range dependVendor.OwnedImports {
-			glob := vendorImport.Value
-
-			_ = glob
-			// todo: if glob match (import) { return true }
+			matcher := o.getCompiledImportGlobMatcher(vendorImport.Value)
+			if matcher.Match(string(importPath)) {
+				return true
+			}
 		}
 	}
 
-	// todo: another linter ID:
-	// todo: -this import %s matched by many vendors, but expected only one
-
 	return false
+}
+
+func (o *Imports) getCompiledImportGlobMatcher(importPath arch.PathImportGlob) glob.Glob {
+	if cached, exist := o.importGlobCache[importPath]; exist {
+		return cached
+	}
+
+	// err guaranteed can`t be here, because every importGlobPath already checked on validation stage
+	matcher, _ := glob.Compile(string(importPath), '/')
+
+	o.importGlobCache[importPath] = matcher
+
+	return matcher
 }
 
 func (o *Imports) findProjectImportPathOwner(lCtx *lintContext, importPath arch.PathImport) *arch.ComponentName {
