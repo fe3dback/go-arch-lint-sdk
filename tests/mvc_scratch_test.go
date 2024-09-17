@@ -18,7 +18,8 @@ func TestScratch(t *testing.T) {
 	rootDirectory, err := filepath.Abs(fmt.Sprintf("./projects/%s", projectID))
 	require.NoError(t, err)
 
-	archSDK := sdk.NewSDK(arch.PathAbsolute(rootDirectory))
+	archSDK, err := sdk.NewSDK(arch.PathAbsolute(rootDirectory))
+	require.NoError(t, err)
 
 	const (
 		cmpApp          = "app"

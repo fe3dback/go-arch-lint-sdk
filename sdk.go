@@ -1,6 +1,9 @@
 package sdk
 
 import (
+	"fmt"
+	"path/filepath"
+
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
 	"github.com/fe3dback/go-arch-lint-sdk/commands/check"
 	"github.com/fe3dback/go-arch-lint-sdk/commands/mapping"
@@ -26,7 +29,16 @@ type (
 // - call SDK.Spec().FromXXX(..) to get or define "Arch specification"
 // - call SDK.Mapping($spec) to run "mapping" command
 // - call SDK.Check($spec) to run "check" command
-func NewSDK(projectDirectory arch.PathAbsolute, opts ...CreateOptionsFn) *SDK {
+func NewSDK(projectDirectory arch.PathAbsolute, opts ...CreateOptionsFn) (*SDK, error) {
+	if !filepath.IsAbs(string(projectDirectory)) {
+		cleanedRoot, err := filepath.Abs(string(projectDirectory))
+		if err != nil {
+			return nil, fmt.Errorf("invalid project directory '%s': %w", projectDirectory, err)
+		}
+
+		projectDirectory = arch.PathAbsolute(cleanedRoot)
+	}
+
 	opt := &CreateOptions{
 		usedContext: arch.UsedContextDefault,
 		skipMissUse: false,
@@ -44,7 +56,7 @@ func NewSDK(projectDirectory arch.PathAbsolute, opts ...CreateOptionsFn) *SDK {
 			opt.usedContext,
 			opt.skipMissUse,
 		),
-	}
+	}, nil
 }
 
 // Spec returns config builder / fetcher

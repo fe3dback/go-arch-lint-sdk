@@ -15,7 +15,8 @@ import (
 func TestCheck(t *testing.T) {
 	// todo: delete this test
 
-	archSDK := sdk.NewSDK(arch.PathAbsolute("/home/neo/code/fe3dback/linter/go-arch-lint/v4"))
+	archSDK, err := sdk.NewSDK(arch.PathAbsolute("/home/neo/code/fe3dback/linter/go-arch-lint/v4"))
+	require.NoError(t, err)
 
 	spec, err := archSDK.Spec().FromDefaultFile()
 	require.NoError(t, err)
