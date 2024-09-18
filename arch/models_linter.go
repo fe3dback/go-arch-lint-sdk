@@ -1,10 +1,9 @@
 package arch
 
 const (
-	LinterIDOrphans          LinterID = "orphans"
-	LinterIDComponentImports LinterID = "component_imports"
-	LinterIDVendorImports    LinterID = "vendor_imports"
-	LinterIDDeepScan         LinterID = "deepscan"
+	LinterIDOrphans  LinterID = "orphans"
+	LinterIDImports  LinterID = "imports"
+	LinterIDDeepScan LinterID = "deepscan"
 )
 
 type (
@@ -38,10 +37,7 @@ type (
 		LinterIDOrphan *LinterOrphanDetails `json:"LinterIDOrphan,omitempty"`
 
 		// exist when LinterID = arch.LinterIDComponentImports
-		LinterIDComponentImports *LinterImportDetails `json:"LinterIDComponentImports,omitempty"`
-
-		// exist when LinterID = arch.LinterIDVendorImports
-		LinterIDVendorImports *LinterImportDetails `json:"LinterIDVendorImports,omitempty"`
+		LinterIDImports *LinterImportDetails `json:"LinterIDImports,omitempty"`
 
 		// exist when LinterID = arch.LinterIDDeepScan
 		LinterIDDeepscan *LinterDeepscanDetails `json:"LinterIDDeepscan,omitempty"`
@@ -53,12 +49,17 @@ type (
 	}
 
 	LinterImportDetails struct {
-		ComponentName      ComponentName `json:"ComponentName"`
-		FileRelativePath   PathRelative  `json:"FileRelativePath"`
-		FileAbsolutePath   PathAbsolute  `json:"FileAbsolutePath"`
-		ResolvedImportName PathImport    `json:"ResolvedImportName"`
-		Reference          Reference     `json:"Reference"`
+		ComponentName      ComponentName                 `json:"ComponentName"`
+		TargetType         LinterImportDetailsTargetType `json:"TargetType"`
+		TargetName         string                        `json:"TargetName"`    // Owner of ResolvedImportName (component or vendor)
+		TargetDefined      bool                          `json:"TargetDefined"` // true if Target is known component or vendor in config
+		FileRelativePath   PathRelative                  `json:"FileRelativePath"`
+		FileAbsolutePath   PathAbsolute                  `json:"FileAbsolutePath"`
+		ResolvedImportName PathImport                    `json:"ResolvedImportName"`
+		Reference          Reference                     `json:"Reference"`
 	}
+
+	LinterImportDetailsTargetType string
 
 	LinterDeepscanDetails struct {
 		Gate       LinterDeepscanGate       `json:"Gate"`
@@ -86,4 +87,9 @@ type (
 		Definition   Reference    `json:"Definition"`
 		RelativePath PathRelative `json:"-"` // internal/app/internal/container/cmd_mapping.go:15
 	}
+)
+
+const (
+	LinterImportDetailsTargetTypeComponent LinterImportDetailsTargetType = "Component"
+	LinterImportDetailsTargetTypeVendor    LinterImportDetailsTargetType = "Vendor"
 )

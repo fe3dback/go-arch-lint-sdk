@@ -8,6 +8,7 @@ import (
 	"github.com/gobwas/glob"
 
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
+	"github.com/fe3dback/go-arch-lint-sdk/internal/services/project/xpath"
 )
 
 type Imports struct {
@@ -32,7 +33,7 @@ func NewImports() *Imports {
 
 func (o *Imports) Information() arch.Linter {
 	return arch.Linter{
-		ID:                  arch.LinterIDComponentImports,
+		ID:                  arch.LinterIDImports,
 		Name:                "Imports",
 		Description:         "Check that packages contain only allowed \"import\" statements",
 		EnableConditionHint: "always on",
@@ -74,21 +75,25 @@ func (o *Imports) checkFile(lCtx *lintContext, component *arch.SpecComponent, as
 			continue
 		case importTypeProject:
 			if !o.isProjectImportAllowed(lCtx, component, importPath) {
-				importOwnerName := o.findProjectImportPathOwner(lCtx, importPath)
+				importOwner := o.findProjectImportPathOwner(lCtx, importPath)
+				importOwnerName := orDefault(importOwner, "unknown")
 
 				lCtx.state.AddNotice(arch.LinterNotice{
 					Message: fmt.Sprintf("Component '%s' shouldn't depend on '%s' ('%s') in '%s:%d'",
 						component.Name.Value,
-						orDefault(importOwnerName, "unknown"),
+						importOwnerName,
 						importPath,
 						importRef.File,
 						importRef.Line,
 					),
 					Reference: importRef,
 					Details: arch.LinterNoticeDetails{
-						LinterID: arch.LinterIDComponentImports,
-						LinterIDComponentImports: &arch.LinterImportDetails{
+						LinterID: arch.LinterIDImports,
+						LinterIDImports: &arch.LinterImportDetails{
 							ComponentName:      component.Name.Value,
+							TargetType:         arch.LinterImportDetailsTargetTypeComponent,
+							TargetName:         string(importOwnerName),
+							TargetDefined:      importOwner != nil,
 							FileRelativePath:   arch.PathRelative(strings.TrimPrefix(string(importRef.File), string(lCtx.ro.spec.Project.Directory))),
 							FileAbsolutePath:   importRef.File,
 							ResolvedImportName: importPath,
@@ -99,18 +104,25 @@ func (o *Imports) checkFile(lCtx *lintContext, component *arch.SpecComponent, as
 			}
 		case importTypeVendor:
 			if !o.isVendorImportAllowed(lCtx, component, importPath) {
+				importOwner := o.findVendorImportPathOwner(lCtx, importPath)
+				importOwnerName := orDefault(importOwner, "unknown")
+
 				lCtx.state.AddNotice(arch.LinterNotice{
-					Message: fmt.Sprintf("Component '%s' shouldn't use '%s' in '%s:%d'",
+					Message: fmt.Sprintf("Component '%s' shouldn't use '%s' ('%s') in '%s:%d'",
 						component.Name.Value,
+						importOwnerName,
 						importPath,
 						importRef.File,
 						importRef.Line,
 					),
 					Reference: importRef,
 					Details: arch.LinterNoticeDetails{
-						LinterID: arch.LinterIDVendorImports,
-						LinterIDVendorImports: &arch.LinterImportDetails{
+						LinterID: arch.LinterIDImports,
+						LinterIDImports: &arch.LinterImportDetails{
 							ComponentName:      component.Name.Value,
+							TargetType:         arch.LinterImportDetailsTargetTypeVendor,
+							TargetName:         string(importOwnerName),
+							TargetDefined:      importOwner != nil,
 							FileRelativePath:   arch.PathRelative(strings.TrimPrefix(string(importRef.File), string(lCtx.ro.spec.Project.Directory))),
 							FileAbsolutePath:   importRef.File,
 							ResolvedImportName: importPath,
@@ -151,8 +163,7 @@ func (o *Imports) isVendorImportAllowed(lCtx *lintContext, component *arch.SpecC
 		dependVendor := lCtx.ro.spec.Vendors[dependVendorID.Value]
 
 		for _, vendorImport := range dependVendor.OwnedImports {
-			matcher := o.getCompiledImportGlobMatcher(vendorImport.Value)
-			if matcher.Match(string(importPath)) {
+			if xpath.IsGlobMatched(string(vendorImport.Value), string(importPath)) {
 				return true
 			}
 		}
@@ -161,24 +172,23 @@ func (o *Imports) isVendorImportAllowed(lCtx *lintContext, component *arch.SpecC
 	return false
 }
 
-func (o *Imports) getCompiledImportGlobMatcher(importPath arch.PathImportGlob) glob.Glob {
-	if cached, exist := o.importGlobCache[importPath]; exist {
-		return cached
-	}
-
-	// err guaranteed can`t be here, because every importGlobPath already checked on validation stage
-	matcher, _ := glob.Compile(string(importPath), '/')
-
-	o.importGlobCache[importPath] = matcher
-
-	return matcher
-}
-
 func (o *Imports) findProjectImportPathOwner(lCtx *lintContext, importPath arch.PathImport) *arch.ComponentName {
 	for _, component := range lCtx.ro.spec.Components {
 		for _, ownedPackage := range component.OwnedPackages {
 			if ownedPackage.Import == importPath {
 				return &component.Name.Value
+			}
+		}
+	}
+
+	return nil
+}
+
+func (o *Imports) findVendorImportPathOwner(lCtx *lintContext, importPath arch.PathImport) *arch.VendorName {
+	for _, vendor := range lCtx.ro.spec.Vendors {
+		for _, ownedImport := range vendor.OwnedImports {
+			if xpath.IsGlobMatched(string(ownedImport.Value), string(importPath)) {
+				return &vendor.Name.Value
 			}
 		}
 	}

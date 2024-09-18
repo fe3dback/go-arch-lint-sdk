@@ -26,6 +26,8 @@ func TestCheck(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	// todo: some func to format out
+
 	formattedOut, err := json.MarshalIndent(out, "", "  ")
 	require.NoError(t, err)
 

@@ -1,11 +1,7 @@
 package xpath
 
 import (
-	"fmt"
 	pathUtils "path"
-	"strings"
-
-	"github.com/gobwas/glob"
 
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
 )
@@ -17,22 +13,8 @@ func NewMatcherRelativeGlob() *MatcherRelativeGlob {
 }
 
 func (m *MatcherRelativeGlob) match(ctx *queryContext, query arch.FileQuery) ([]arch.PathDescriptor, error) {
-	path := query.Path.(arch.PathRelativeGlob) // guaranteed by root composite
-	path = arch.PathRelativeGlob(pathUtils.Join(string(query.WorkingDirectory), string(path)))
-
-	var patternLast glob.Glob
-	patternNormal, err := glob.Compile(string(path), '/')
-	if err != nil {
-		return nil, fmt.Errorf("failed compile glob matcher '%s': %w", path, err)
-	}
-
-	if strings.HasSuffix(string(path), "/**") {
-		pathLast := strings.TrimSuffix(string(path), "/**")
-		patternLast, err = glob.Compile(pathLast, '/')
-		if err != nil {
-			return nil, fmt.Errorf("failed compile glob matcher '%s': %w", pathLast, err)
-		}
-	}
+	pattern := query.Path.(arch.PathRelativeGlob) // guaranteed by root composite
+	pattern = arch.PathRelativeGlob(pathUtils.Join(string(query.WorkingDirectory), string(pattern)))
 
 	results := make([]arch.PathDescriptor, 0, 16)
 
@@ -45,14 +27,7 @@ func (m *MatcherRelativeGlob) match(ctx *queryContext, query arch.FileQuery) ([]
 			return
 		}
 
-		matchedNormal := patternNormal.Match(string(dsc.PathRel))
-		matchedLast := false
-
-		if patternLast != nil {
-			matchedLast = patternLast.Match(string(dsc.PathRel))
-		}
-
-		if !(matchedNormal || matchedLast) {
+		if !IsGlobMatched(string(pattern), string(dsc.PathRel)) {
 			return
 		}
 

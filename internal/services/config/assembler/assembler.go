@@ -132,10 +132,16 @@ func (a *Assembler) assembleVendors(conf *models.Config) (arch.Vendors, error) {
 	vendors := make(arch.Vendors, conf.Vendors.Map.Len())
 
 	conf.Vendors.Map.Each(func(name arch.VendorName, vendor models.ConfigVendor, definitionRef arch.Reference) {
+		cleanedIn := make(arch.RefSlice[arch.PathImportGlob], 0, len(vendor.In))
+		for _, path := range vendor.In {
+			path.Value = arch.PathImportGlob(strings.TrimRight(string(path.Value), "/"))
+			cleanedIn = append(cleanedIn, path)
+		}
+
 		vendors[name] = &arch.SpecVendor{
 			Name:         arch.NewRef(name, definitionRef),
 			Definition:   definitionRef,
-			OwnedImports: vendor.In,
+			OwnedImports: cleanedIn,
 		}
 	})
 
