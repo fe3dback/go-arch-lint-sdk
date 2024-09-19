@@ -1,10 +1,18 @@
 package arch
 
 const (
+	LinterIDSyntax   LinterID = "syntax"
 	LinterIDOrphans  LinterID = "orphans"
 	LinterIDImports  LinterID = "imports"
 	LinterIDDeepScan LinterID = "deepscan"
 )
+
+var LintersSortOrder = map[LinterID]int{
+	LinterIDSyntax:   10,
+	LinterIDOrphans:  20,
+	LinterIDImports:  100,
+	LinterIDDeepScan: 200,
+}
 
 type (
 	LinterID string

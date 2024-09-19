@@ -5,6 +5,7 @@ import (
 
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
 	"github.com/fe3dback/go-arch-lint-sdk/commands/check"
+	"github.com/fe3dback/go-arch-lint-sdk/internal/models"
 )
 
 type Operation struct {
@@ -20,7 +21,11 @@ func NewOperation(
 }
 
 func (o *Operation) Execute(spec arch.Spec, in check.In) (check.Out, error) {
-	linters, err := o.linter.Lint(spec)
+	lintOptions := models.LintOptions{
+		CheckSyntax: in.CheckSyntax,
+	}
+
+	linters, err := o.linter.Lint(spec, lintOptions)
 	if err != nil {
 		return check.Out{}, fmt.Errorf("linters failed: %w", err)
 	}

@@ -22,7 +22,7 @@ func (o *Orphans) Information() arch.Linter {
 	}
 }
 
-func (o *Orphans) IsSuitable(_ *arch.Spec) bool {
+func (o *Orphans) IsSuitable(_ *lintContextReadOnly) bool {
 	return true
 }
 

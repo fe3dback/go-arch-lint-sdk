@@ -22,6 +22,7 @@ func TestCheck(t *testing.T) {
 	require.NoError(t, err)
 
 	out, err := archSDK.Check(spec, check.In{
+		CheckSyntax: true,
 		MaxWarnings: 32,
 	})
 	require.NoError(t, err)

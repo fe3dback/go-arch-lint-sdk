@@ -4,6 +4,9 @@ import "github.com/fe3dback/go-arch-lint-sdk/arch"
 
 type (
 	In struct {
+		// Check go AST syntax? (default: true)
+		CheckSyntax bool
+
 		// Output notices limit
 		MaxWarnings int
 	}

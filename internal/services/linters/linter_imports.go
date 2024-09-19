@@ -40,7 +40,7 @@ func (o *Imports) Information() arch.Linter {
 	}
 }
 
-func (o *Imports) IsSuitable(_ *arch.Spec) bool {
+func (o *Imports) IsSuitable(_ *lintContextReadOnly) bool {
 	return true
 }
 

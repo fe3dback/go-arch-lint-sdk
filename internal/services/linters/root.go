@@ -3,32 +3,16 @@ package linters
 import (
 	"fmt"
 	"go/token"
+	"sort"
+	"strings"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/tools/go/packages"
 
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
+	"github.com/fe3dback/go-arch-lint-sdk/internal/models"
 )
-
-// todo: imp
-//var linters = []check.Linter{
-//	{
-//		ID:   check.LinterIDComponentImports,
-//		Name: "Base: component imports",
-//		Hint: "always on",
-//	},
-//	{
-//		ID:   check.LinterIDVendorImports,
-//		Name: "Advanced: vendor imports",
-//		Hint: "switch 'allow.depOnAnyVendor = false' (or delete) to on",
-//	},
-//	{
-//		ID:   check.LinterIDDeepScan,
-//		Name: "Advanced: method calls and dependency injections",
-//		Hint: "switch 'allow.depOnAnyVendor = false' (or delete) to on",
-//	},
-//}
 
 type Root struct {
 	linters []linter
@@ -40,11 +24,11 @@ func NewRoot(linters ...linter) *Root {
 	}
 }
 
-func (l *Root) Lint(spec arch.Spec) ([]arch.LinterResult, error) {
+func (l *Root) Lint(spec arch.Spec, options models.LintOptions) ([]arch.LinterResult, error) {
 	var mux sync.Mutex
 
 	results := make([]arch.LinterResult, 0, len(l.linters))
-	roCtx, err := l.prepareLintContext(&spec)
+	roCtx, err := l.prepareLintContext(&spec, options)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare lint context: %w", err)
 	}
@@ -56,7 +40,7 @@ func (l *Root) Lint(spec arch.Spec) ([]arch.LinterResult, error) {
 
 		eg.Go(func() error {
 			info := linter.Information()
-			info.Used = linter.IsSuitable(&spec) // spec is RO
+			info.Used = linter.IsSuitable(&roCtx) // spec is RO
 
 			result := arch.LinterResult{
 				Linter: info,
@@ -92,10 +76,17 @@ func (l *Root) Lint(spec arch.Spec) ([]arch.LinterResult, error) {
 		return nil, fmt.Errorf("run linters failed: %w", err)
 	}
 
+	sort.SliceStable(results, func(i, j int) bool {
+		lntI, lntJ := results[i], results[j]
+		orderI, orderJ := arch.LintersSortOrder[lntI.Linter.ID], arch.LintersSortOrder[lntJ.Linter.ID]
+
+		return orderI < orderJ
+	})
+
 	return results, nil
 }
 
-func (l *Root) prepareLintContext(spec *arch.Spec) (lintContextReadOnly, error) {
+func (l *Root) prepareLintContext(spec *arch.Spec, options models.LintOptions) (lintContextReadOnly, error) {
 	fileSet := token.NewFileSet()
 
 	parsedPackages, err := l.parsePackages(fileSet, spec)
@@ -109,6 +100,7 @@ func (l *Root) prepareLintContext(spec *arch.Spec) (lintContextReadOnly, error) 
 	}
 
 	lCtx := lintContextReadOnly{
+		options:       options,
 		spec:          spec,
 		fileSet:       fileSet,
 		stdPackageIDs: parsedStdPackagesIDs,
@@ -166,7 +158,7 @@ func (l *Root) parsePackages(fileSet *token.FileSet, spec *arch.Spec) (packagesM
 			cfg := &packages.Config{
 				Mode: parseMode,
 				Fset: fileSet,
-				Dir:  string(directory),
+				Dir:  string(spec.Project.Directory),
 			}
 
 			parsedPackages, err := packages.Load(cfg, string(directory))
@@ -174,11 +166,30 @@ func (l *Root) parsePackages(fileSet *token.FileSet, spec *arch.Spec) (packagesM
 				return fmt.Errorf("failed parse go source at '%s': %w", dst.PathRel, err)
 			}
 
-			mux.Lock()
-			for _, goPackage := range parsedPackages {
-				packagesMap[dst.PathRel] = append(packagesMap[dst.PathRel], goPackage)
+			if len(parsedPackages) == 0 {
+				return fmt.Errorf("directory '%s' not contain any go packages", directory)
 			}
-			mux.Unlock()
+
+			for _, goPackage := range parsedPackages {
+				for _, err := range goPackage.Errors {
+					if err.Kind == packages.ListError {
+						help := ""
+						if strings.Contains(err.Msg, "does not contain package") {
+							help = " (maybe 'go.work' used and this module is not listed?)"
+						}
+
+						return fmt.Errorf("failed load package at '%s': %v%s",
+							directory,
+							err.Error(),
+							help,
+						)
+					}
+				}
+
+				mux.Lock()
+				packagesMap[dst.PathRel] = append(packagesMap[dst.PathRel], goPackage)
+				mux.Unlock()
+			}
 
 			return nil
 		})

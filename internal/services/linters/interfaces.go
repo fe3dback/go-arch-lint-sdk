@@ -10,7 +10,7 @@ type (
 	// lCtx must be guarded when necessary
 	linter interface {
 		Information() arch.Linter
-		IsSuitable(roSpec *arch.Spec) bool
+		IsSuitable(lCtx *lintContextReadOnly) bool
 		Lint(lCtx *lintContext) error
 	}
 )

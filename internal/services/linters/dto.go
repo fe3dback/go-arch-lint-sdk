@@ -7,6 +7,7 @@ import (
 	"golang.org/x/tools/go/packages"
 
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
+	"github.com/fe3dback/go-arch-lint-sdk/internal/models"
 )
 
 type (
@@ -20,6 +21,9 @@ type (
 	// lintContext is READ ONLY and shouldn't been modified inside linters
 	// all linters will work in goroutines and can read all data in parallel
 	lintContextReadOnly struct {
+		// global options
+		options models.LintOptions
+
 		// go ast fileSet. All parse function will use this fileSet
 		// so, it can be used for reference resolving after parsing
 		fileSet *token.FileSet
