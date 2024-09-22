@@ -15,12 +15,14 @@ import (
 )
 
 type Root struct {
-	linters []linter
+	renderer renderer
+	linters  []linter
 }
 
-func NewRoot(linters ...linter) *Root {
+func NewRoot(renderer renderer, linters ...linter) *Root {
 	return &Root{
-		linters: linters,
+		renderer: renderer,
+		linters:  linters,
 	}
 }
 
@@ -82,6 +84,20 @@ func (l *Root) Lint(spec arch.Spec, options models.LintOptions) ([]arch.LinterRe
 
 		return orderI < orderJ
 	})
+
+	// render notices
+	for i := range results {
+		result := &results[i]
+
+		for j := range result.Notices {
+			notice := &result.Notices[j]
+
+			err := l.renderer.Format(notice)
+			if err != nil {
+				return nil, fmt.Errorf("failed to format notice: %w", err)
+			}
+		}
+	}
 
 	return results, nil
 }

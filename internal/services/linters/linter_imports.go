@@ -1,7 +1,6 @@
 package linters
 
 import (
-	"fmt"
 	"go/ast"
 	"strings"
 
@@ -79,13 +78,6 @@ func (o *Imports) checkFile(lCtx *lintContext, component *arch.SpecComponent, as
 				importOwnerName := orDefault(importOwner, "unknown")
 
 				lCtx.state.AddNotice(arch.LinterNotice{
-					Message: fmt.Sprintf("Component '%s' shouldn't depend on '%s' ('%s') in '%s:%d'",
-						component.Name.Value,
-						importOwnerName,
-						importPath,
-						importRef.File,
-						importRef.Line,
-					),
 					Reference: importRef,
 					Details: arch.LinterNoticeDetails{
 						LinterID: arch.LinterIDImports,
@@ -108,13 +100,6 @@ func (o *Imports) checkFile(lCtx *lintContext, component *arch.SpecComponent, as
 				importOwnerName := orDefault(importOwner, "unknown")
 
 				lCtx.state.AddNotice(arch.LinterNotice{
-					Message: fmt.Sprintf("Component '%s' shouldn't use '%s' ('%s') in '%s:%d'",
-						component.Name.Value,
-						importOwnerName,
-						importPath,
-						importRef.File,
-						importRef.Line,
-					),
 					Reference: importRef,
 					Details: arch.LinterNoticeDetails{
 						LinterID: arch.LinterIDImports,

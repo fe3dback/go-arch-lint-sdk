@@ -1,8 +1,6 @@
 package linters
 
 import (
-	"fmt"
-
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
 )
 
@@ -29,7 +27,6 @@ func (o *Orphans) IsSuitable(_ *lintContextReadOnly) bool {
 func (o *Orphans) Lint(lCtx *lintContext) error {
 	for _, orphan := range lCtx.ro.spec.Orphans {
 		lCtx.state.AddNotice(arch.LinterNotice{
-			Message:   fmt.Sprintf("File '%s' not attached to any component in archfile", orphan.File.PathRel),
 			Reference: arch.NewFileReference(orphan.File.PathAbs),
 			Details: arch.LinterNoticeDetails{
 				LinterID: arch.LinterIDOrphans,

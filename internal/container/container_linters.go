@@ -7,6 +7,7 @@ import (
 func (c *Container) lintersRoot() *linters.Root {
 	return once(func() *linters.Root {
 		return linters.NewRoot(
+			c.serviceNoticeFormatter(),
 			c.lintersSyntax(),
 			c.lintersOrphans(),
 			c.lintersImports(),

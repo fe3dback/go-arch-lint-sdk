@@ -36,10 +36,15 @@ type (
 		Message   string              `json:"Message"`
 		Reference Reference           `json:"Reference"`
 		Details   LinterNoticeDetails `json:"Details"`
+
+		ReferencePreview string `json:"-"`
 	}
 
 	LinterNoticeDetails struct {
 		LinterID LinterID `json:"LinterID"`
+
+		// exist when LinterID = arch.LinterIDOrphans
+		LinterIDSyntax *LinterSyntaxDetails `json:"LinterIDSyntax,omitempty"`
 
 		// exist when LinterID = arch.LinterIDOrphans
 		LinterIDOrphan *LinterOrphanDetails `json:"LinterIDOrphan,omitempty"`
@@ -49,6 +54,13 @@ type (
 
 		// exist when LinterID = arch.LinterIDDeepScan
 		LinterIDDeepscan *LinterDeepscanDetails `json:"LinterIDDeepscan,omitempty"`
+	}
+
+	LinterSyntaxDetails struct {
+		ComponentName ComponentName `json:"ComponentName"`
+		GoPackageName string        `json:"GoPackageName"`
+		GoPackagePath PathRelative  `json:"GoPackagePath"`
+		SyntaxError   string        `json:"SyntaxError"`
 	}
 
 	LinterOrphanDetails struct {

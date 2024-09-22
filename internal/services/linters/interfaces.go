@@ -13,4 +13,8 @@ type (
 		IsSuitable(lCtx *lintContextReadOnly) bool
 		Lint(lCtx *lintContext) error
 	}
+
+	renderer interface {
+		Format(notice *arch.LinterNotice) error
+	}
 )

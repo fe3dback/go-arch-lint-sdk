@@ -1,0 +1,5 @@
+{{- /*gotype: github.com/fe3dback/go-arch-lint-sdk/arch.LinterNotice*/ -}}
+
+Failed parse AST of component {{ .Details.LinterIDSyntax.ComponentName | colorize "magenta" }} package {{ .Details.LinterIDSyntax.ComponentName | colorize "cyan" }}:
+{{ concat " invalid syntax: " (concat .Details.LinterIDSyntax.SyntaxError | colorize "red") }}
+{{ concat " at " (concat .Reference.File ":" .Reference.Line | colorize "gray") }}

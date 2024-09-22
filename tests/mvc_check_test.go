@@ -1,8 +1,6 @@
 package tests
 
 import (
-	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,10 +13,11 @@ import (
 func TestCheck(t *testing.T) {
 	// todo: delete this test
 
-	archSDK, err := sdk.NewSDK(arch.PathAbsolute("/home/neo/code/fe3dback/linter/go-arch-lint/v4"))
+	// archSDK, err := sdk.NewSDK(arch.PathAbsolute("/home/neo/code/fe3dback/linter/go-arch-lint/v4"))
+	archSDK, err := sdk.NewSDK(arch.PathAbsolute("/home/neo/code/fe3dback/linter/go-arch-lint/v4/tests/_projects/legacy"))
 	require.NoError(t, err)
 
-	spec, err := archSDK.Spec().FromDefaultFile()
+	spec, err := archSDK.Spec().FromRelativeFile(arch.PathRelative("arch1_warnings.yml"))
 	require.NoError(t, err)
 
 	out, err := archSDK.Check(spec, check.In{
@@ -26,11 +25,5 @@ func TestCheck(t *testing.T) {
 		MaxWarnings: 32,
 	})
 	require.NoError(t, err)
-
-	// todo: some func to format out
-
-	formattedOut, err := json.MarshalIndent(out, "", "  ")
-	require.NoError(t, err)
-
-	fmt.Println(string(formattedOut))
+	archSDK.Assert(t, out)
 }

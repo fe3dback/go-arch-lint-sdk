@@ -1,8 +1,6 @@
 package linters
 
 import (
-	"fmt"
-
 	"golang.org/x/tools/go/packages"
 
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
@@ -50,15 +48,15 @@ func (o *Syntax) checkComponent(lCtx *lintContext, component *arch.SpecComponent
 				}
 
 				lCtx.state.AddNotice(arch.LinterNotice{
-					Message: fmt.Sprintf("Failed parse component '%s' package '%s' at '%s': invalid syntax: %v",
-						component.Name.Value,
-						astPackage.Name,
-						ownedPackage.PathRel,
-						err.Msg,
-					),
 					Reference: referenceFromAstPos(err.Pos),
 					Details: arch.LinterNoticeDetails{
 						LinterID: arch.LinterIDSyntax,
+						LinterIDSyntax: &arch.LinterSyntaxDetails{
+							ComponentName: component.Name.Value,
+							GoPackageName: astPackage.Name,
+							GoPackagePath: ownedPackage.PathRel,
+							SyntaxError:   err.Msg,
+						},
 					},
 				})
 			}

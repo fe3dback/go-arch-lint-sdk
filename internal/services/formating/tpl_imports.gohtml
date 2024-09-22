@@ -1,0 +1,23 @@
+{{- $text1 := "" }}
+{{- $text2 := "" }}
+{{- $text3 := "" }}
+
+{{- if .Details.LinterIDImports.TargetDefined -}}
+    {{- $targetType := "" }}
+    {{- if eq .Details.LinterIDImports.TargetType "Vendor" -}}
+        {{- $targetType = concat (.Details.LinterIDImports.TargetType | colorize "blue") "." -}}
+    {{- end -}}
+
+    {{- $text1 = concat "Dependency " (.Details.LinterIDImports.ComponentName | colorize "magenta") " -\\-> " $targetType (.Details.LinterIDImports.TargetName | colorize "magenta") " not allowed" -}}
+    {{- $text2 = concat "  by import " (.Details.LinterIDImports.ResolvedImportName | colorize "cyan") -}}
+    {{- $text3 = concat "  at " (concat .Reference.File ":" .Reference.Line | colorize "gray") -}}
+{{- else -}}
+    {{- $text1 = concat "Component " (.Details.LinterIDImports.ComponentName | colorize "magenta") -}}
+    {{- $text2 = concat "  shouldn't depend on (not declared) " .Details.LinterIDImports.TargetType " " (.Details.LinterIDImports.ResolvedImportName | colorize "cyan") -}}
+    {{- $text3 = concat "  at " (concat .Reference.File ":" .Reference.Line | colorize "gray") -}}
+{{- end -}}
+
+{{ $text1 }}
+{{ $text2 }}
+{{ $text3 }}
+{{ "" }}

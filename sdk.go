@@ -3,6 +3,7 @@ package sdk
 import (
 	"fmt"
 	"path/filepath"
+	"testing"
 
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
 	"github.com/fe3dback/go-arch-lint-sdk/commands/check"
@@ -81,6 +82,24 @@ func (sdk *SDK) Check(spec arch.Spec, in check.In) (check.Out, error) {
 	err = sdk.wrapErrWithFriendlyHelp(err)
 
 	return out, err
+}
+
+func (sdk *SDK) Assert(t *testing.T, result check.Out) {
+	// todo: output full formatted text (like in CLI)
+
+	if result.NoticesCount == 0 {
+		t.Logf("Project %s does not contain any issues", sdk.projectDirectory)
+		return
+	}
+
+	for _, linter := range result.Linters {
+		for ind, notice := range linter.Notices {
+			// todo: or user normal test ID
+			t.Run(fmt.Sprintf("Linter-%s-%d", linter.Linter.ID, ind), func(t *testing.T) {
+				t.Error("\n" + notice.Message)
+			})
+		}
+	}
 }
 
 func (sdk *SDK) wrapErrWithFriendlyHelp(err error) error {
