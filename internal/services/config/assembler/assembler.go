@@ -91,7 +91,7 @@ func (a *Assembler) assembleComponents(conf *models.Config, project *arch.Projec
 			DeepScan:            deepScan,
 			StrictMode:          conf.Settings.Imports.StrictMode,
 			AllowAllProjectDeps: rules.AnyProjectDeps,
-			AllowAllVendorDeps:  rules.AnyVendorDeps,
+			AllowAllVendorDeps:  assembleAllowAllVendors(conf.Settings.Imports.AllowAnyVendorImports, rules.AnyVendorDeps),
 			AllowAllTags:        tagsAllowedAll,
 			AllowedTags:         tagsAllowedWhiteList,
 			MayDependOn:         append(conf.CommonComponents, rules.MayDependOn...),
@@ -126,6 +126,14 @@ func (a *Assembler) assembleComponents(conf *models.Config, project *arch.Projec
 	}
 
 	return components, nil
+}
+
+func assembleAllowAllVendors(global arch.Ref[bool], local arch.Ref[bool]) arch.Ref[bool] {
+	if global.Value {
+		return global
+	}
+
+	return local
 }
 
 func (a *Assembler) assembleVendors(conf *models.Config) (arch.Vendors, error) {

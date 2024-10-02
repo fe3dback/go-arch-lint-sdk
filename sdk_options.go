@@ -4,8 +4,9 @@ import "github.com/fe3dback/go-arch-lint-sdk/arch"
 
 type (
 	CreateOptions struct {
-		usedContext arch.UsedContext
-		skipMissUse bool
+		usedContext  arch.UsedContext
+		outputColors bool
+		skipMissUse  bool
 	}
 
 	CreateOptionsFn func(opt *CreateOptions)
@@ -16,6 +17,16 @@ type (
 func WithSkipMissUse(skipMissUse bool) CreateOptionsFn {
 	return func(opt *CreateOptions) {
 		opt.skipMissUse = skipMissUse
+	}
+}
+
+// WithOutputColors can be used for override default=true mode (ansi)
+//
+//	true  = ansi  (use colors)
+//	false = ascii (only plain text)
+func WithOutputColors(outputColors bool) CreateOptionsFn {
+	return func(opt *CreateOptions) {
+		opt.outputColors = outputColors
 	}
 }
 

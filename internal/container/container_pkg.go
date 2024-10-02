@@ -1,7 +1,6 @@
 package container
 
 import (
-	"github.com/fe3dback/go-arch-lint-sdk/arch"
 	"github.com/fe3dback/go-arch-lint-sdk/pkg/tpl"
 	"github.com/fe3dback/go-arch-lint-sdk/pkg/tpl/colorizer"
 )
@@ -16,6 +15,6 @@ func (c *Container) serviceRenderer() *tpl.Renderer {
 
 func (c *Container) serviceColorizer() *colorizer.Colorizer {
 	return once(func() *colorizer.Colorizer {
-		return colorizer.New(c.usedContext == arch.UsedContextCLI, false)
+		return colorizer.New(c.outputColors, false)
 	})
 }

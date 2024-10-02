@@ -41,8 +41,9 @@ func NewSDK(projectDirectory arch.PathAbsolute, opts ...CreateOptionsFn) (*SDK, 
 	}
 
 	opt := &CreateOptions{
-		usedContext: arch.UsedContextDefault,
-		skipMissUse: false,
+		usedContext:  arch.UsedContextDefault,
+		outputColors: true,
+		skipMissUse:  false,
 	}
 
 	for _, mutate := range opts {
@@ -56,6 +57,7 @@ func NewSDK(projectDirectory arch.PathAbsolute, opts ...CreateOptionsFn) (*SDK, 
 			projectDirectory,
 			opt.usedContext,
 			opt.skipMissUse,
+			opt.outputColors,
 		),
 	}, nil
 }
