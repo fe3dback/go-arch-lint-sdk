@@ -1,0 +1,73 @@
+version: 4
+
+settings:
+  imports:
+    strictMode: false
+    allowAnyVendorImports: true
+  structTags:
+    allowed: [json]
+
+exclude:
+  directories:
+    - bin
+    - tests
+    - tools
+  files:
+    - "^.*_test\\.go$"
+    - "^.*\/test\/.*$"
+    - "^.*\/tests\/.*$"
+    - "^.*\/mocks\/.*$"
+
+components:
+  sdk:                  { in: . }
+  models:               { in: arch }
+  commandDto:           { in: commands/* }
+  definition:           { in: definition/** }
+  definitionOpts:       { in: definition/cfg }
+  definitionInternals:  { in: definition/internal }
+  container:            { in: internal/container/** }
+  privateModels:        { in: internal/models }
+  operations:           { in: internal/operations/* }
+  services:             { in: internal/services/** }
+  pkg:                  { in: pkg/** }
+
+#commonVendors:
+#  - cli
+
+commonComponents:
+  - models
+  - pkg
+
+dependencies:
+  sdk:
+    mayDependOn:
+      - container
+      - commandDto
+      - definition
+      - privateModels
+
+  container:
+    anyVendorDeps: true
+    anyProjectDeps: true
+
+  definition:
+    mayDependOn:
+      - definitionOpts
+      - definitionInternals
+      - privateModels
+
+  definitionOpts:
+    mayDependOn:
+      - definitionInternals
+      - privateModels
+
+  operations:
+    mayDependOn:
+      - services
+      - commandDto
+      - privateModels
+
+  services:
+    mayDependOn:
+      - services
+      - privateModels

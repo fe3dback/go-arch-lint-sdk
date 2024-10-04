@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/muesli/termenv"
+
+	"github.com/fe3dback/go-arch-lint-sdk/arch"
 )
 
 var palette = map[string]string{
@@ -18,28 +20,34 @@ var palette = map[string]string{
 }
 
 type Colorizer struct {
-	useColors bool
-	env       *termenv.Output
+	colorEnv arch.TerminalColorEnv
+	env      *termenv.Output
 }
 
-func New(useColors bool, forceASCII bool) *Colorizer {
-	var env *termenv.Output
+func New(colorEnv arch.TerminalColorEnv) *Colorizer {
+	// detect color profile from TTY
+	prof := termenv.ColorProfile()
 
-	if !forceASCII {
-		// detect profile automatically
-		env = termenv.NewOutput(os.Stdout)
-	} else {
-		env = termenv.NewOutput(os.Stdout, termenv.WithProfile(termenv.ANSI))
+	// reset if not allowed
+	if colorEnv == arch.TerminalColorEnvBlackAndWhite {
+		prof = termenv.Ascii
+	}
+
+	// force override from ascii to ansi
+	// but if color profile better than ansi - will stay as-is
+	if colorEnv == arch.TerminalColorEnvColored && prof == termenv.Ascii {
+		// force turn on colors
+		prof = termenv.ANSI
 	}
 
 	return &Colorizer{
-		useColors: useColors,
-		env:       env,
+		colorEnv: colorEnv,
+		env:      termenv.NewOutput(os.Stdout, termenv.WithProfile(prof)),
 	}
 }
 
 func (c *Colorizer) Colorize(color string, text string) string {
-	if !c.useColors {
+	if c.colorEnv == arch.TerminalColorEnvBlackAndWhite {
 		return text
 	}
 

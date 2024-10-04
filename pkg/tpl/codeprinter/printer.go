@@ -11,21 +11,36 @@ import (
 type Printer struct {
 	rawExtractor         linesExtractor
 	highlightedExtractor linesExtractor
+	useColors            bool
 }
+
+type (
+	internalOpts struct {
+		CodePrintOpts
+		highlight bool
+	}
+)
 
 func NewPrinter(
 	rawExtractor linesExtractor,
 	highlightedExtractor linesExtractor,
+	useColors bool,
 ) *Printer {
 	return &Printer{
 		rawExtractor:         rawExtractor,
 		highlightedExtractor: highlightedExtractor,
+		useColors:            useColors,
 	}
 }
 
-func (p *Printer) Print(ref Reference, opts CodePrintOpts) (string, error) {
+func (p *Printer) Print(ref Reference, externalOpts CodePrintOpts) (string, error) {
 	if !ref.Valid {
 		return "", nil
+	}
+
+	opts := internalOpts{
+		CodePrintOpts: externalOpts,
+		highlight:     p.useColors,
 	}
 
 	maxLines, err := fileLinesCount(ref.File)
@@ -54,8 +69,8 @@ func (p *Printer) Print(ref Reference, opts CodePrintOpts) (string, error) {
 	return strings.Join(lines, "\n"), nil
 }
 
-func (p *Printer) extractLines(opts CodePrintOpts, region area) ([]string, error) {
-	if opts.Highlight {
+func (p *Printer) extractLines(opts internalOpts, region area) ([]string, error) {
+	if opts.highlight {
 		return p.highlightedExtractor.ExtractLines(region.ref.File, region.from, region.to)
 	}
 
@@ -71,7 +86,7 @@ func fileLinesCount(pathAbs string) (int, error) {
 	return len(strings.Split(string(data), "\n")), nil
 }
 
-func calculateRegion(ref Reference, opts CodePrintOpts, maxLines int) area {
+func calculateRegion(ref Reference, opts internalOpts, maxLines int) area {
 	line := clamp(ref.Line, 1, maxLines)
 	from, to := line, line
 

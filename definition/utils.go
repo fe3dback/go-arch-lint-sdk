@@ -21,6 +21,7 @@ func (def *Definition) withUserFriendlyError(spec arch.Spec, err error) (arch.Sp
 		return arch.Spec{}, err
 	}
 
+	// todo: add auto preview (if error is referenced. ex: config has syntax problem)
 	// wrap
 	return arch.Spec{}, models.NewSDKError(err, def.projectPath)
 }

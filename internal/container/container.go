@@ -1,24 +1,26 @@
 package container
 
-import "github.com/fe3dback/go-arch-lint-sdk/arch"
+import (
+	"github.com/fe3dback/go-arch-lint-sdk/arch"
+)
 
 type Container struct {
 	projectDirectory arch.PathAbsolute
 	usedContext      arch.UsedContext
+	terminalColorEnv arch.TerminalColorEnv
 	skipMissUsages   bool
-	outputColors     bool
 }
 
 func NewContainer(
 	projectDirectory arch.PathAbsolute,
 	usedContext arch.UsedContext,
 	skipMissUsages bool,
-	outputColors bool,
+	useColors bool,
 ) *Container {
 	return &Container{
 		projectDirectory: projectDirectory,
 		usedContext:      usedContext,
+		terminalColorEnv: arch.DetectColorProfile(useColors),
 		skipMissUsages:   skipMissUsages,
-		outputColors:     outputColors,
 	}
 }

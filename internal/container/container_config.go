@@ -24,6 +24,7 @@ func (c *Container) serviceConfigValidator() *validator.Root {
 		return validator.NewRoot(
 			c.usedContext,
 			c.skipMissUsages,
+			c.serviceCodePrinter(),
 			c.serviceConfigValidatorWorkdir(),
 			c.serviceConfigValidatorExcludedFiles(),
 			c.serviceConfigValidatorCmnComponents(),

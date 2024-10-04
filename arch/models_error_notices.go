@@ -15,8 +15,9 @@ type (
 	}
 
 	Notice struct {
-		Message   string    `json:"Message"`
-		Reference Reference `json:"Reference"`
+		Message     string    `json:"Message"`
+		Reference   Reference `json:"Reference"`
+		CodePreview string    `json:"-"`
 	}
 )
 
@@ -43,8 +44,8 @@ func (en ErrorWithNotices) Error() string {
 			if notice.Reference.Valid {
 				buf.WriteString(fmt.Sprintf("   at %s:%d\n", notice.Reference.File, notice.Reference.Line))
 
-				if preview, ok := printCode(notice.Reference); ok {
-					buf.WriteString(stringutil.PrefixLines(preview, "      "))
+				if notice.CodePreview != "" {
+					buf.WriteString(stringutil.PrefixLines(notice.CodePreview, "      "))
 					buf.WriteString("      \n")
 				}
 			}

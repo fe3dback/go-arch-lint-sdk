@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/fe3dback/go-arch-lint-sdk/arch"
 	"github.com/fe3dback/go-arch-lint-sdk/pkg/tpl/colorizer"
 )
 
@@ -51,7 +52,7 @@ func TestASCII_Colorize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := colorizer.New(tt.in.useColors, true)
+			r := colorizer.New(arch.TerminalColorEnvColored)
 
 			got := r.Colorize(tt.in.color, tt.in.text)
 			require.Equal(t, tt.out, got)

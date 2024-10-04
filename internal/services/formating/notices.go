@@ -4,15 +4,21 @@ import (
 	"fmt"
 
 	"github.com/fe3dback/go-arch-lint-sdk/arch"
+	"github.com/fe3dback/go-arch-lint-sdk/pkg/tpl/codeprinter"
 )
 
 type NoticeFormatter struct {
 	renderer renderer
+	printer  printer
 }
 
-func NewNoticeFormatter(renderer renderer) *NoticeFormatter {
+func NewNoticeFormatter(
+	renderer renderer,
+	printer printer,
+) *NoticeFormatter {
 	return &NoticeFormatter{
 		renderer: renderer,
+		printer:  printer,
 	}
 }
 
@@ -29,7 +35,17 @@ func (nf *NoticeFormatter) Format(notice *arch.LinterNotice) error {
 		return fmt.Errorf("failed render notice in template '%s': %w", id, err)
 	}
 
+	preview, err := nf.printer.Print(transformRef(notice.Reference), codeprinter.CodePrintOpts{
+		LineNumbers: true,
+		Arrows:      true,
+		Mode:        codeprinter.CodePrintModeExtend,
+	})
+	if err != nil {
+		return fmt.Errorf("failed create code preview for notice: %w", err)
+	}
+
 	notice.Message = out
+	notice.ReferencePreview = preview
 	return nil
 }
 
@@ -67,5 +83,14 @@ func (nf *NoticeFormatter) getTemplateBytes(linterID arch.LinterID) ([]byte, err
 		return tplNoticeImports, nil
 	default:
 		return nil, fmt.Errorf("formatting template for notice '%s' not defined", linterID)
+	}
+}
+
+func transformRef(reference arch.Reference) codeprinter.Reference {
+	return codeprinter.Reference{
+		File:   string(reference.File),
+		Line:   reference.Line,
+		Column: reference.Column,
+		Valid:  reference.Valid,
 	}
 }

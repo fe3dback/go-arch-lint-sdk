@@ -12,6 +12,5 @@ type CodePrintOpts struct {
 	LineNumbers bool
 	Arrows      bool
 	ColumnArrow bool
-	Highlight   bool
 	Mode        CodePrintMode
 }
