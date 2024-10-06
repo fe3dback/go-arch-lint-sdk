@@ -90,7 +90,7 @@ func (sdk *SDK) Assert(t *testing.T, result check.Out) {
 	// todo: output full formatted text (like in CLI)
 
 	if result.NoticesCount == 0 {
-		t.Logf("Arch linter OK: project '%s' corresponds to defined architecture", sdk.projectDirectory)
+		t.Logf("[OK] Arch linter: project '%s' corresponds to defined architecture", sdk.projectDirectory)
 		return
 	}
 
@@ -98,7 +98,7 @@ func (sdk *SDK) Assert(t *testing.T, result check.Out) {
 		for ind, notice := range linter.Notices {
 			// todo: or user normal test ID
 			t.Run(fmt.Sprintf("Linter-%s-%d", linter.Linter.ID, ind), func(t *testing.T) {
-				t.Errorf("\n\n%s\n\n%s\n\n", notice.Message, notice.ReferencePreview)
+				t.Errorf("\n\n%s\n\n%s\n\n", notice.Message, notice.Preview)
 			})
 		}
 	}

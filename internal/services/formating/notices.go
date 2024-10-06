@@ -35,17 +35,20 @@ func (nf *NoticeFormatter) Format(notice *arch.LinterNotice) error {
 		return fmt.Errorf("failed render notice in template '%s': %w", id, err)
 	}
 
-	preview, err := nf.printer.Print(transformRef(notice.Reference), codeprinter.CodePrintOpts{
-		LineNumbers: true,
-		Arrows:      true,
-		Mode:        codeprinter.CodePrintModeExtend,
-	})
-	if err != nil {
-		return fmt.Errorf("failed create code preview for notice: %w", err)
+	preview := ""
+	if _, ok := arch.LintersWithPreview[notice.Details.LinterID]; ok {
+		preview, err = nf.printer.Print(transformRef(notice.Reference), codeprinter.CodePrintOpts{
+			LineNumbers: true,
+			Arrows:      true,
+			Mode:        codeprinter.CodePrintModeExtend,
+		})
+		if err != nil {
+			return fmt.Errorf("failed create code preview for notice: %w", err)
+		}
 	}
 
 	notice.Message = out
-	notice.ReferencePreview = preview
+	notice.Preview = preview
 	return nil
 }
 

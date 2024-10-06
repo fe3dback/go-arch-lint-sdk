@@ -14,6 +14,13 @@ var LintersSortOrder = map[LinterID]int{
 	LinterIDDeepScan: 200,
 }
 
+var on = struct{}{}
+var LintersWithPreview = map[LinterID]any{
+	LinterIDSyntax:   on,
+	LinterIDImports:  on,
+	LinterIDDeepScan: on,
+}
+
 type (
 	LinterID string
 
@@ -36,8 +43,7 @@ type (
 		Message   string              `json:"Message"`
 		Reference Reference           `json:"Reference"`
 		Details   LinterNoticeDetails `json:"Details"`
-
-		ReferencePreview string `json:"-"`
+		Preview   string              `json:"-"`
 	}
 
 	LinterNoticeDetails struct {
