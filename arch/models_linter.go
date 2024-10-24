@@ -25,11 +25,10 @@ type (
 	LinterID string
 
 	Linter struct {
-		ID                  LinterID `json:"ID"`
-		Used                bool     `json:"Used"`
-		Name                string   `json:"-"`
-		Description         string   `json:"-"`
-		EnableConditionHint string   `json:"-"`
+		ID          LinterID `json:"ID"`
+		Used        bool     `json:"Used"`
+		Name        string   `json:"-"`
+		Description string   `json:"-"`
 	}
 )
 

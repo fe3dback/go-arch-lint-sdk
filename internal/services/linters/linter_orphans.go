@@ -13,10 +13,9 @@ func NewOrphans() *Orphans {
 
 func (o *Orphans) Information() arch.Linter {
 	return arch.Linter{
-		ID:                  arch.LinterIDOrphans,
-		Name:                "Orphans",
-		Description:         "Will return list of all files that not mapped to any components specified in config",
-		EnableConditionHint: "always on",
+		ID:          arch.LinterIDOrphans,
+		Name:        "Orphans",
+		Description: "Will return list of all files that not mapped to any components specified in config",
 	}
 }
 

@@ -32,10 +32,9 @@ func NewImports() *Imports {
 
 func (o *Imports) Information() arch.Linter {
 	return arch.Linter{
-		ID:                  arch.LinterIDImports,
-		Name:                "Imports",
-		Description:         "Check that packages contain only allowed \"import\" statements",
-		EnableConditionHint: "always on",
+		ID:          arch.LinterIDImports,
+		Name:        "Imports",
+		Description: "Check that packages contain only allowed \"import\" statements",
 	}
 }
 

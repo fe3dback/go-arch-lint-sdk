@@ -15,10 +15,9 @@ func NewSyntax() *Syntax {
 
 func (o *Syntax) Information() arch.Linter {
 	return arch.Linter{
-		ID:                  arch.LinterIDSyntax,
-		Name:                "Go Syntax",
-		Description:         "Check that go files has correct go AST code (if not, checker can guarantee correct work of other arch-linters)",
-		EnableConditionHint: "always on",
+		ID:          arch.LinterIDSyntax,
+		Name:        "Go Syntax",
+		Description: "Check that go files has correct go AST code (if not, checker can guarantee correct work of other arch-linters)",
 	}
 }
 

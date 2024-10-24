@@ -4,30 +4,35 @@
   "MappingGrouped": [
     {
       "ComponentName": "app",
+      "ComponentExist": true,
       "Packages": [
         "/root/internal"
       ]
     },
     {
       "ComponentName": "handlers",
+      "ComponentExist": true,
       "Packages": [
         "/root/internal/handlers/books"
       ]
     },
     {
       "ComponentName": "models",
+      "ComponentExist": true,
       "Packages": [
         "/root/internal/models"
       ]
     },
     {
       "ComponentName": "repositories",
+      "ComponentExist": true,
       "Packages": [
         "/root/internal/repositories/books"
       ]
     },
     {
       "ComponentName": "services",
+      "ComponentExist": true,
       "Packages": [
         "/root/internal/domains/library/services/books/create"
       ]
@@ -36,23 +41,28 @@
   "MappingList": [
     {
       "Package": "/root/internal",
-      "ComponentName": "app"
+      "ComponentName": "app",
+      "ComponentExist": true
     },
     {
       "Package": "/root/internal/handlers/books",
-      "ComponentName": "handlers"
+      "ComponentName": "handlers",
+      "ComponentExist": true
     },
     {
       "Package": "/root/internal/models",
-      "ComponentName": "models"
+      "ComponentName": "models",
+      "ComponentExist": true
     },
     {
       "Package": "/root/internal/repositories/books",
-      "ComponentName": "repositories"
+      "ComponentName": "repositories",
+      "ComponentExist": true
     },
     {
       "Package": "/root/internal/domains/library/services/books/create",
-      "ComponentName": "services"
+      "ComponentName": "services",
+      "ComponentExist": true
     }
   ]
 }

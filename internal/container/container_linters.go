@@ -2,6 +2,7 @@ package container
 
 import (
 	"github.com/fe3dback/go-arch-lint-sdk/internal/services/linters"
+	"github.com/fe3dback/go-arch-lint-sdk/internal/services/linters/deepscan"
 )
 
 func (c *Container) lintersRoot() *linters.Root {
@@ -11,6 +12,7 @@ func (c *Container) lintersRoot() *linters.Root {
 			c.lintersSyntax(),
 			c.lintersOrphans(),
 			c.lintersImports(),
+			c.lintersDeepscan(),
 		)
 	})
 }
@@ -25,4 +27,12 @@ func (c *Container) lintersOrphans() *linters.Orphans {
 
 func (c *Container) lintersImports() *linters.Imports {
 	return once(linters.NewImports)
+}
+
+func (c *Container) lintersDeepscan() *linters.Deepscan {
+	return once(func() *linters.Deepscan {
+		return linters.NewDeepscan(
+			deepscan.NewProjectAstFetcher(),
+		)
+	})
 }

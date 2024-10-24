@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/fe3dback/go-arch-lint-sdk/pkg/codeprinter"
+	"github.com/fe3dback/go-arch-lint-sdk/pkg/tpl/codeprinter"
 )
 
 const (
@@ -21,7 +21,7 @@ const (
 // will regenerate all *.golden files in tests
 // you need to verify all generated files before commit
 // and change mode back to "verify"
-const mode = modeVerify
+const mode = modeGenerateGold
 
 func TestPrinter_Print(t *testing.T) {
 	type ref struct {
@@ -30,64 +30,59 @@ func TestPrinter_Print(t *testing.T) {
 		column   int
 	}
 
-	matrix := map[string]codeprinter.CodePrintOpts{
+	matrixParams := map[string]codeprinter.CodePrintOpts{
 		"one_line": {
 			Borders:     false,
 			LineNumbers: false,
 			Arrows:      false,
-			Highlight:   false,
+			ColumnArrow: false,
 			Mode:        codeprinter.CodePrintModeOneLine,
 		},
 		"b0_n0_a1_h0_mOL": {
 			Borders:     false,
 			LineNumbers: false,
 			Arrows:      true,
-			Highlight:   false,
+			ColumnArrow: true,
 			Mode:        codeprinter.CodePrintModeOneLine,
 		},
 		"b0_n1_a1_h0_mOL": {
 			Borders:     false,
 			LineNumbers: true,
 			Arrows:      true,
-			Highlight:   false,
+			ColumnArrow: true,
 			Mode:        codeprinter.CodePrintModeOneLine,
 		},
 		"b0_n1_a0_h0_mE": {
 			Borders:     false,
 			LineNumbers: true,
 			Arrows:      false,
-			Highlight:   false,
+			ColumnArrow: false,
 			Mode:        codeprinter.CodePrintModeExtend,
 		},
 		"b0_n1_a1_h0_mE": {
 			Borders:     false,
 			LineNumbers: true,
 			Arrows:      true,
-			Highlight:   false,
+			ColumnArrow: true,
 			Mode:        codeprinter.CodePrintModeExtend,
 		},
-		"b0_n1_a1_h1_mE": {
-			Borders:     false,
+		"b0_n1_a2_h0_mE": {
+			Borders:     true,
 			LineNumbers: true,
 			Arrows:      true,
-			Highlight:   true,
+			ColumnArrow: false,
 			Mode:        codeprinter.CodePrintModeExtend,
 		},
 		"full": {
 			Borders:     true,
 			LineNumbers: true,
 			Arrows:      true,
-			Highlight:   false,
-			Mode:        codeprinter.CodePrintModeExtend,
-		},
-		"full_colored": {
-			Borders:     true,
-			LineNumbers: true,
-			Arrows:      true,
-			Highlight:   true,
+			ColumnArrow: true,
 			Mode:        codeprinter.CodePrintModeExtend,
 		},
 	}
+
+	matrixHighlight := []bool{false, true}
 
 	tests := []struct {
 		group   string
@@ -128,39 +123,42 @@ func TestPrinter_Print(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%s_%s", tt.group, tt.name), func(t *testing.T) {
-			p := codeprinter.NewPrinter(
-				codeprinter.NewExtractorRaw(),
-				codeprinter.NewExtractorHL(),
-			)
+			for _, highlight := range matrixHighlight {
+				p := codeprinter.NewPrinter(
+					codeprinter.NewExtractorRaw(),
+					codeprinter.NewExtractorHL(),
+					highlight,
+				)
 
-			pathSrc := filepath.Clean(fmt.Sprintf("./tests/%s", tt.ref.testFile))
-			srcReference := codeprinter.Reference{
-				File:   pathSrc,
-				Line:   tt.ref.line,
-				Column: tt.ref.column,
-				Valid:  true,
-			}
+				pathSrc := filepath.Clean(fmt.Sprintf("./tests/%s", tt.ref.testFile))
+				srcReference := codeprinter.Reference{
+					File:   pathSrc,
+					Line:   tt.ref.line,
+					Column: tt.ref.column,
+					Valid:  true,
+				}
 
-			for variantName, opts := range matrix {
-				dirName := strings.ReplaceAll(tt.ref.testFile, ".", "_")
-				pathDst := filepath.Clean(fmt.Sprintf("./tests/%s/%s/%s.golden", dirName, tt.name, variantName))
+				for variantName, opts := range matrixParams {
+					dirName := strings.ReplaceAll(tt.ref.testFile, ".", "_")
+					pathDst := filepath.Clean(fmt.Sprintf("./tests/%s/%s/%s_hl%v.golden", dirName, tt.name, variantName, highlight))
 
-				got, err := p.Print(srcReference, opts)
-				require.NoError(t, err)
-
-				switch mode {
-				case modeGenerateGold:
-					err = os.MkdirAll(filepath.Dir(pathDst), os.ModePerm)
+					got, err := p.Print(srcReference, opts)
 					require.NoError(t, err)
 
-					err = os.WriteFile(pathDst, []byte(got), 0600)
-					require.NoError(t, err)
-				case modeVerify:
-					want, err := os.ReadFile(pathDst)
-					require.NoError(t, err)
-					require.Equal(t, string(want), got)
+					switch mode {
+					case modeGenerateGold:
+						err = os.MkdirAll(filepath.Dir(pathDst), os.ModePerm)
+						require.NoError(t, err)
 
-					t.Logf("\nout:\n--\n%s\n--\n", got)
+						err = os.WriteFile(pathDst, []byte(got), 0600)
+						require.NoError(t, err)
+					case modeVerify:
+						want, err := os.ReadFile(pathDst)
+						require.NoError(t, err)
+						require.Equal(t, string(want), got)
+
+						t.Logf("\nout:\n--\n%s\n--\n", got)
+					}
 				}
 			}
 		})
